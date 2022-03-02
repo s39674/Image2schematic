@@ -1,2 +1,2 @@
 # Image2schematic
-Trying to extract pcb schematics from images using computer vision
+Welcome to my Repo! This is my notebook on trying to extract pcb schematics from images using computer vision. 
