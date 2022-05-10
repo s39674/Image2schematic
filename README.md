@@ -1,10 +1,10 @@
-# Image2schematic-amirs test version
+# Image2schematic
 
 Welcome to my Repo! This is my notebook on trying to extract pcb schematics from images using computer vision. Any help is greatly appreciated!
 
 I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.  
 
-**Global SITREP**: Currently Working on getting skidl to schematic ready for use.
+**Global SITREP**: Currently Working on getting skidl_to_schematic ready for use. Also working on querying skidl IC's database.
 
 ---------------------------------------------------
 
