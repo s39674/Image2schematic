@@ -1,4 +1,4 @@
-# Image2schematic
+# Image2schematic-amirs test version
 
 Welcome to my Repo! This is my notebook on trying to extract pcb schematics from images using computer vision. Any help is greatly appreciated!
 
