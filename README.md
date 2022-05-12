@@ -1,8 +1,8 @@
 # Image2schematic
 
-Welcome to my Repo! This is my notebook on trying to extract pcb schematics from images using computer vision. Any help is greatly appreciated!
+Welcome to my Repo! This is my notebook on trying to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
 
-I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.  
+I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
 
 **Global SITREP**: Currently Working on getting skidl_to_schematic ready for use. Also working on querying skidl IC's database.
 
@@ -17,11 +17,11 @@ There are multiple stages needed for this project:
     **SITREP**: currently no progress on that have been achived, any ideas would be greatly appreciated!
 
 
-2. Using OpenCV, we need to understand the pin to pin traces, and assign each pin with it's corrosponding x and y coordinates.
+2. Using `OpenCV`, we need to understand the pin to pin traces, and assign each pin with it's corrosponding x and y coordinates.
 
     **SITREP**: very far into it, need to upload the files to github.
 
-3. Using OpenCV, we need the understand the text on the ICs that are on the board, and then pass that into skidl search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
+3. Using `OpenCV` OR `tesseract`, we need the understand the text on the ICs that are on the board, and then pass that into skidl search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
 
     **SITREP**: some what into it, we do know where there are ICs, as well as used skidl queries.
 
@@ -41,7 +41,7 @@ $ pip install opencv-python
 
 Note: i do recommand installing the full package of `OpenCV` as it gives some extra handy modules that might be used in the future. Read more here: https://pypi.org/project/opencv-python/
 
-After you have cloned the repository, first run `T_detectingPoints.py`:
+After you have cloned the repository, <ins>first run</ins> `T_detectingPoints.py`:
 
 ```bash
 $ python3 T_detectingPoints.py
@@ -59,7 +59,7 @@ $ python3 ConnectionFinding.py
 
 If you now look at `PointsFileFor_Board8.png.txt` you should now see every connection from any point. This is the baseline to building an entire schematic.
 
-Few topics i really need help with:
+## Few topics i really need help with:
 
 - building a class for each point and IC
 - more than 2 point connection finding

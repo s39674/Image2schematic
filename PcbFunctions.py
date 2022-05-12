@@ -6,6 +6,8 @@ import sys
 from collections import Counter
 import os
 
+from sympy import true
+
 # images of points, used for image matching
 RectPointRight_img = cv2.imread(
     'assets/Example_images/Board_points/rectPoint.png', cv2.IMREAD_COLOR)
@@ -85,7 +87,7 @@ def GetDominotColor(img):
     return colors[count.argmax()]
 
 
-def DetectPointsV2(image):
+def DetectPointsV2(image, Debugging_Enabled = true):
     '''
     ## version 2 of DetectingCircles.\n
     This function takes an image and returns a numpy 3-diminisonal array contining all points.
@@ -98,17 +100,17 @@ def DetectPointsV2(image):
 
     '''
     copy = image.copy()
-    # i'm not sure if this messes up the reference point
-    # 3copy = PutOnTopBigBlack(copy)
+    
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.medianBlur(gray, 11)
     # a varibale that display's how much points was found, if 1 then that means i didn't get the other one so resort to diffrent methods
     Num_Points_Found = 0
-    cv2.imshow('blur', blur)
+    # it also captures the rectangles points
     thresh = cv2.threshold(
         blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    # very intresting, looks like it also captured the rectangles
-    cv2.imshow('thresh', thresh)
+    if Debugging_Enabled:
+        cv2.imshow('blur', blur)
+        cv2.imshow('thresh', thresh)
 
     # dummy array intsilation
     BoardPointsArray = np.array([[1, 2], [3, 4]])
@@ -159,7 +161,8 @@ def DetectPointsV2(image):
             BoardPointsArray = np.append(
                 BoardPointsArray, [[int(x), int(y)]], axis=0)
             Num_Points_Found += 1
-    cv2.imshow('Both_Rec&Circs_DetectedByV2', copy)
+    if Debugging_Enabled:
+        cv2.imshow('Both_Rec&Circs_DetectedByV2', copy)
 
     print("Num_Points_Found before image matching: ", Num_Points_Found)
 
@@ -171,8 +174,8 @@ def DetectPointsV2(image):
         Already_Found = False
         # return x,y,w,h of the image of the point inside the bigger image
         # what do i do if there are two rect or two circles?
-        rect = Template_matching(image, RectPointRight_img, 0.81, True)
-        circ = Template_matching(image, CircPoint_img, 0.81, True)
+        rect = Template_matching(image, RectPointRight_img, 0.81, Debugging_Enabled)
+        circ = Template_matching(image, CircPoint_img, 0.81, Debugging_Enabled)
         #rect = -1
         #circ = -1
 
@@ -337,6 +340,10 @@ def Template_matching(img, Img_Point, DesValue, Debug_Enable):
             cv2.waitKey(0)
         return -1
 
+# Math functions
+def calculateDistance(x1,y1,x2,y2):
+    dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    return dist
 
 ###############################################################################
 # All of those methods uses SIFT OR SUFT and dont work as of 13/12 in opencv-contrib 4.3.x

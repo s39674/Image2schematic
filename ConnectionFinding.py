@@ -1,33 +1,37 @@
 
-
-
-from numpy.core.numeric import count_nonzero
 import math
-import time
 import sys
 import cv2
 import os
-from collections import Counter
 import numpy as np
 from PcbFunctions import *
 
-
-font = cv2.FONT_HERSHEY_SIMPLEX
-
 ImageName = "Board8.png"
-Debugging_enable = False
-Write_Enable = False
+# Debug mode allows you to see the image processing more clearly
+Debugging_Enable = False
+# Choose to write the Connections to the PointsFile or not. 
+Write_Enable = True
+# If there are no chips/integrated circuits, the process could be a lot faster.
 ICS_Introduced = True
+# for later use.
+IcDetectionTest = True
+
+# stores chips corrds for later use- associting each pin with its corrsponding x,y cords
+IcCords = np.array([[1, 2], [3, 4]])        # dummy array intsilation
+IcCords = np.delete(IcCords, [0, 1], axis=0)    # clearing the array for inputs
+
 
 img = cv2.imread(
     'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
 if img is None:
     sys.exit("Could not read the image.")
 
-
-if Debugging_enable:
+"""
+# for future use
+if Debugging_Enable:
     DEBUGGING_FILE1 = open("Debugging/DEBUGGING_FILE1.txt", "w")
     DEBUGGING_FILE1.write("~~~---START---~~~\n")
+"""
     
 
 
@@ -48,7 +52,7 @@ def PutOnTopBigBlack(image):
 
 def DetectICsSilk(img):
     '''
-    A function that detects an ICs silk traces (where an ICs should be placed) and hide it
+    This function detects an ICs silk traces (where an ICs should be placed) and hides it
     input: An image that the function should find the ics silk traces inside
     output: An image with those Silk traces removed, an array contining an x,y,w,h (rectangle) of where the traces are. the array has this format:
     [[x1,y1,w1,h1],
@@ -58,7 +62,7 @@ def DetectICsSilk(img):
 
     IcsDetected = img.copy()
     copy = img.copy()
-    
+    global IcCords
     
     BoardColor = GetDominotColor(img)
     
@@ -86,9 +90,12 @@ def DetectICsSilk(img):
         print("Area: ", area)
         
         if len(approx) == 4 and area > 100 and area < 70000:
-            print("found ic")
+            
             (x, y, w, h) = cv2.boundingRect(approx)
             
+            print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
+            if IcDetectionTest:
+                IcCords = np.append(IcCords, [[int(x), int(y)],[int(x+w),int(y+h)]], axis=0)
             
             
             cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -96,9 +103,6 @@ def DetectICsSilk(img):
             cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
                           (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
             
-            
-
-    
     return img
 
 
@@ -108,6 +112,7 @@ try:
         "output/Files/PointsFileFor_{}.txt".format(ImageName), "r")
 except OSError as e:
     sys.exit("Could not open the EBP points file. error: ", e)
+
 EBP_String, EntireBoardPoints = GetPointsFromFile(EntireBoardPointsFile)
 
 
@@ -115,10 +120,13 @@ cv2.imshow('Original Image', img)
 cv2.waitKey(0)
 
 if ICS_Introduced:
-    
     img = DetectICsSilk(img)
     cv2.imshow('Ics removed', img)
     cv2.waitKey(0)
+
+
+print("Ics at:",IcCords)
+
 
 ###
 
@@ -127,20 +135,16 @@ cnts = GetContours(img)
 CroppingMaskV2 = np.zeros_like(img)
 
 
-
+""" # for future use
 dp = 1
 min_dist = 0.1  
 param_1 = 200
 param_2 = 15
 min_Radius = 0
 max_Radius = 15
-
+"""
 
 contour_counter = 0
-
-
-
-
 
 pts = np.array([[1, 2], [3, 4]])        
 pts = np.delete(pts, [0, 1], axis=0)    
@@ -208,14 +212,18 @@ for c in cnts:
                          (255, 255, 255), -1, cv2.LINE_AA)
 
         AntiCroppingMask = cv2.bitwise_not(CroppingMask)
-        cv2.imshow("CroppingMask", CroppingMask)
-        cv2.imshow("AntiCroppingMask", AntiCroppingMask)
-        cv2.waitKey(0)
+
+        if Debugging_Enable:
+            cv2.imshow("CroppingMask", CroppingMask)
+            cv2.imshow("AntiCroppingMask", AntiCroppingMask)
+            cv2.waitKey(0)
 
 
         dst = cv2.bitwise_and(croped, croped, mask=CroppingMask)
-        cv2.imshow("dst1", dst)
-        cv2.waitKey(0)
+
+        if Debugging_Enable:
+            cv2.imshow("dst1", dst)
+            cv2.waitKey(0)
 
         
         
@@ -230,8 +238,9 @@ for c in cnts:
         
         dst[black_mask > 0] = (29, 53, 5)
 
-        cv2.imshow("dst2", dst)
-        cv2.waitKey(0)
+        if Debugging_Enable:
+            cv2.imshow("dst2", dst)
+            cv2.waitKey(0)
 
         #dst = cv2.bitwise_and(test, test, mask=AntiCroppingMask)
         #cv2.imshow("dst", dst)
@@ -243,7 +252,7 @@ for c in cnts:
         print("############\nCONTOUR NUMBER: {}\n############".format(contour_counter))
 
         
-        ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox)
+        ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox, Debugging_Enable)
         
         for Point in ContourBoxPoints:
             Point[0] = Point[0] + (x2)
