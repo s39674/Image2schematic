@@ -1,4 +1,5 @@
 import math
+from re import I
 import numpy as np
 import cv2
 import sys
@@ -342,8 +343,25 @@ def Template_matching(img, Img_Point, DesValue, Debug_Enable):
 
 # Math functions
 def calculateDistance(x1,y1,x2,y2):
-    dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-    return dist
+    """
+    This function calculates the distance between two points.
+    TODO: input validation;
+    """
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+# IC info string functions
+
+def GetAmountOfPins(IcPinInfo):
+    """
+    This function takes skidl's format of ic information and returns the total
+    pins of that ic. takes this format:
+    ['ATtiny841-SS ():', 'Pin None/1/VCC/POWER-IN', 'Pin None/10/PA3/BIDIRECTIONAL', 'Pin None/11/PA2/BIDIRECTIONAL', 'Pin None/12/PA1/BIDIRECTIONAL', 'Pin None/13/AREF/PA0/BIDIRECTIONAL', 'Pin None/14/GND/POWER-IN', 'Pin None/2/XTAL1/PB0/BIDIRECTIONAL', 'Pin None/3/XTAL2/PB1/BIDIRECTIONAL', 'Pin None/4/~{RESET}/PB3/BIDIRECTIONAL', 'Pin None/5/PB2/BIDIRECTIONAL', 'Pin None/6/PA7/BIDIRECTIONAL', 'Pin None/7/PA6/BIDIRECTIONAL', 'Pin None/8/PA5/BIDIRECTIONAL', 'Pin None/9/PA4/BIDIRECTIONAL']
+    """
+    i = 0
+    for pin in IcPinInfo:
+        if "Pin" in pin:
+            i = i + 1
+    return i
 
 ###############################################################################
 # All of those methods uses SIFT OR SUFT and dont work as of 13/12 in opencv-contrib 4.3.x

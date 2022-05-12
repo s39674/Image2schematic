@@ -1,10 +1,20 @@
 
+"""
+Please run this program SECOND!
+
+this program finds connections between points.
+This program also associate every point with an IC that's connected to it.
+All the data then gets writen to a new points file.
+"""
+
+from cmath import pi
 import math
 import sys
 import cv2
 import os
 import numpy as np
 from PcbFunctions import *
+from skidl import search,show
 
 ImageName = "Board8.png"
 # Debug mode allows you to see the image processing more clearly
@@ -17,9 +27,9 @@ ICS_Introduced = True
 IcDetectionTest = True
 
 # stores chips corrds for later use- associting each pin with its corrsponding x,y cords
-IcCords = np.array([[1, 2], [3, 4]])        # dummy array intsilation
-IcCords = np.delete(IcCords, [0, 1], axis=0)    # clearing the array for inputs
-
+IcCords = np.array([[1, 2, 3, 4]])        # dummy array intsilation
+IcCords = np.delete(IcCords, 0, axis=0)    # clearing the array for inputs
+print(IcCords)
 
 img = cv2.imread(
     'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
@@ -52,13 +62,11 @@ def PutOnTopBigBlack(image):
 
 def DetectICsSilk(img):
     '''
-    This function detects an ICs silk traces (where an ICs should be placed) and hides it
+    This function detects an ICs silk traces (where an ICs should be placed) and hides it, that
+    needed for a better trace finding. This function also populates IcCords for future analysis.
     input: An image that the function should find the ics silk traces inside
-    output: An image with those Silk traces removed, an array contining an x,y,w,h (rectangle) of where the traces are. the array has this format:
-    [[x1,y1,w1,h1],
-    [x2,y2,w2,h2]]
-    this array should be exported down the line to a maybe a schamtic of somesort and an text finding algorthim which will read what the chip is
-    and extract his schmatic data.'''
+    output: An image with those Silk traces removed
+    '''
 
     IcsDetected = img.copy()
     copy = img.copy()
@@ -95,7 +103,7 @@ def DetectICsSilk(img):
             
             print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
             if IcDetectionTest:
-                IcCords = np.append(IcCords, [[int(x), int(y)],[int(x+w),int(y+h)]], axis=0)
+                IcCords = np.append(IcCords, [[int(x), int(y), int(x+w),int(y+h)]], axis=0)
             
             
             cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -125,10 +133,63 @@ if ICS_Introduced:
     cv2.waitKey(0)
 
 
-print("Ics at:",IcCords)
+print("Ics at:", IcCords)
 
+ClosePinPoints = np.array([[1, 2], [3, 4]])        # dummy array intsilation
+ClosePinPoints = np.delete(ClosePinPoints, [0, 1], axis=0)    # clearing the array for inputs
 
-###
+### BEFORE i write the connections, i want to loop over EBP
+### and check (by seeing if the x or y (should be determined by the oriantion of the chip)
+### if it's close enough to the outer right or left line of the chip) to see if a prticular pin is an IC pin,
+### if it is i want to replace the in in the points file with something like this: lm336 Pin[1] Vcc [x,y]
+### and after the connection is found it should say this: 
+### lm336 Pin[1] Vcc [x,y] connected to: hc07 Pin[4] A0 [x,y] 
+### or if the other pin is a regular point: lm336 Pin[1] Vcc [x,y] connected to: [x,y] 
+
+### psudo code:
+### loop EBP, check if the x is close to the x of ic
+### if it is, put it in an array
+### replace every element of that array with the distance of that point to the right most point of the ic
+### sort the array to get the nearst point first => that becomes pin 1
+#### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it
+for IcCord in IcCords:
+    print(f"Ic cords: {IcCord}")
+    print(f"right line x of Ic: {IcCord[2]}")
+    RightMostPointOfIc = [IcCord[2],IcCord[3]]
+    
+    for point in EntireBoardPoints:
+        # check x of point and x of right line of ic
+        if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
+            print("close enough!")
+            ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
+    print(ClosePinPoints)
+    for point in ClosePinPoints:
+        point = calculateDistance(RightMostPointOfIc[0],RightMostPointOfIc[1],point[0],point[1])
+    # quick sort to get the nearst one, that will become pin1
+    ClosePinPoints = np.sort(ClosePinPoints,axis = 0)
+    print(ClosePinPoints)
+
+    CurrentIC = list(filter(bool, [str.strip() for str in (str(show('MCU_Microchip_ATtiny','ATtiny841-SS'))).splitlines()]))
+    with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
+        filedata = file.read()
+        
+    
+    i = 1
+    for ClosePinPoint in ClosePinPoints:
+        print(ClosePinPoint)
+        # the skidl ic format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
+        # this takes care of it.
+        while f"/{i}/" not in CurrentIC[i]:
+            print("mistake.")
+            CurrentIC.append(CurrentIC.pop(i))
+            print(CurrentIC)
+        filedata = filedata.replace(f'Point: [{ClosePinPoint[0]},{ClosePinPoint[1]}]', f'{CurrentIC[0][:-5]} | {CurrentIC[i][9:-1]} | [{ClosePinPoint[0]},{ClosePinPoint[1]}]')
+        i = i + 1
+        
+        
+    
+    with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'w') as file:
+        file.write(filedata)
 
 cnts = GetContours(img)
 
@@ -358,7 +419,7 @@ for c in cnts:
     contour_counter += 1
 if(Write_Enable):
     EntireBoardPointsFileWithConnection = open(
-        "Testing/PointsFileWithConnectionFor{}.txt".format(ImageName), "w")
+        "output//Files//PointsFileWithConnectionFor{}.txt".format(ImageName), "w")
     EntireBoardPointsFileWithConnection.write(EBP_String)
     EntireBoardPointsFileWithConnection.close()
 
