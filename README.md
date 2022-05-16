@@ -25,7 +25,7 @@ There are multiple stages needed for this project:
 
     **SITREP**: some what into it, we do know where there are ICs, as well as used skidl queries.
 
-4. Using all this data metioned above, and using skidl, we will make a file with skidl syntax descirbing the circut, and then output a schematic.
+4. Using all this data metioned above, and using skidl, we will make a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
 
     **SITREP**: very close to outputing a test schematic using skidl syntax, lots of discussion on his repo.
 
@@ -39,12 +39,12 @@ $ pip install skidl
 $ pip install opencv-python
 ```
 
-Note: i do recommand installing the full package of `OpenCV` as it gives some extra handy modules that might be used in the future. Read more here: https://pypi.org/project/opencv-python/
+**Note**: I recommand installing the full package of `OpenCV` as it gives some extra handy modules that might be used in the future. Read more here: https://pypi.org/project/opencv-python/
 
-After you have cloned the repository, <ins>first run</ins> `T_detectingPoints.py`:
+After you cloned the repository, <ins>first run</ins> `detectingPoints.py`:
 
 ```bash
-$ python3 T_detectingPoints.py
+$ python3 detectingPoints.py
 ```
 
 now you should have `PointsFileFor_Board8.png.txt` file under `output/Files`. This file should include all the coordinates (x,y) of the board electrical points.
@@ -59,12 +59,14 @@ $ python3 ConnectionFinding.py
 
 If you now look at `PointsFileFor_Board8.png.txt` you should now see every connection from any point. This is the baseline to building an entire schematic.
 
-## Few topics i really need help with:
+If you encountered any issues during installation or testing of `Image2schematic`, please post them in the issues tab.
+
+## Few topics i need help with:
 
 - building a class for each point and IC
 - more than 2 point connection finding
 - skidl to schematic algorithm
 
-i want to thank you for reading this and i hope you can help me, thank you!
+I want to thank you for reading this and i hope you can help me, thank you!
 
 

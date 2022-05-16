@@ -7,7 +7,7 @@ import sys
 from collections import Counter
 import os
 
-from sympy import true
+
 
 # images of points, used for image matching
 RectPointRight_img = cv2.imread(
@@ -15,6 +15,9 @@ RectPointRight_img = cv2.imread(
 CircPoint_img = cv2.imread(
     'assets/Example_images/Board_points/CircPoint.png', cv2.IMREAD_COLOR)
 
+def get_ordered_list(points, x, y):
+   points.sort(key = lambda p: (p.x - x)**2 + (p.y - y)**2)
+   return points
 
 def GetPointsFromFile(File):
     '''
@@ -87,6 +90,22 @@ def GetDominotColor(img):
         img.reshape(-1, img.shape[-1]), axis=0, return_counts=True)
     return colors[count.argmax()]
 
+
+
+def PutOnTopBigBlack(image):
+    
+    s_img = image
+    l_img = cv2.imread('black.png')
+    
+    x_offset = 300
+    y_offset = 200
+    l_img[y_offset:y_offset+s_img.shape[0],
+          x_offset:x_offset+s_img.shape[1]] = s_img
+
+    cv2.imshow("test", l_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    return l_img
 
 def DetectPointsV2(image, Debugging_Enabled = true):
     '''
@@ -348,6 +367,12 @@ def calculateDistance(x1,y1,x2,y2):
     TODO: input validation;
     """
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+def sortPointsByDistToRefPoint(refPoint, Points):
+    """
+    This function sorts an array of points based on their distance to a reference point.
+    """
+    return np.array(sorted(Points,key=lambda point:calculateDistance(refPoint[0],refPoint[1],*point)))
 
 # IC info string functions
 
