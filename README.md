@@ -44,7 +44,7 @@ $ pip install opencv-python
 After you cloned the repository, <ins>first run</ins> `detectingPoints.py`:
 
 ```bash
-$ python3 T_detectingPoints.py
+$ python3 detectingPoints.py
 ```
 
 now you should have `PointsFileFor_Board8.png.txt` file under `output/Files`. This file should include all the coordinates (x,y) of the board electrical points.
@@ -61,7 +61,7 @@ If you now look at `PointsFileFor_Board8.png.txt` you should now see every conne
 
 If you encountered any issues during installation or testing of `Image2schematic`, please post them in the issues tab.
 
-## Few topics i really need help with:
+## Few topics i need help with:
 
 - building a class for each point and IC
 - more than 2 point connection finding
