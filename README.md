@@ -51,13 +51,34 @@ now you should have `PointsFileFor_Board8.png.txt` file under `output/Files`. Th
 
 Currently there is just one example: `Board8.png`, but feel free to try it on other board images and post your result in the `Discussions` tab.
 
+<p align="left"><img src="assets/Example_images/Board_images/Board8.png" alt="assets/Example_images/Board_images/Board7.png" width="400"/></p>
+
 After that, run `ConnectionFinding.py`:
 
 ```bash
 $ python3 ConnectionFinding.py
 ```
 
-If you now look at `PointsFileFor_Board8.png.txt` you should now see every connection from any point. This is the baseline to building an entire schematic.
+If you now look at `PointsFileFor_Board8.png.txt` you should now see every connection from any point: 
+
+```
+Point: [435,479] connected to: (191,171)
+Point: [435,466] connected to: (191,144)
+Point: [435,453] connected to: (191,117)
+Point: [435,439] connected to: (191,91)
+Point: [435,426] connected to: (191,64)
+Point: [436,412] connected to: (191,37)
+ATtiny841-S | 6/PA7/BIDIRECTIONA | [190,171] connected to: (435,479)
+ATtiny841-S | 5/PB2/BIDIRECTIONA | [190,144] connected to: (435,466)
+ATtiny841-S | 4/~{RESET}/PB3/BIDIRECTIONA | [190,117] connected to: (435,453)
+ATtiny841-S | 3/XTAL2/PB1/BIDIRECTIONA | [190,90] connected to: (435,439)
+ATtiny841-S | 2/XTAL1/PB0/BIDIRECTIONA | [190,64] connected to: (435,426)
+ATtiny841-S | 1/VCC/POWER-I | [190,37] connected to: (435,406)
+```
+
+What we can see are the x,y coordinates of the points, and the x,y coordinates of what point is connected to it. At the bottom we can see what IC is connected to those points and some information about them.
+
+This is the baseline to building an entire schematic.
 
 If you encountered any issues during installation or testing of `Image2schematic`, please post them in the issues tab.
 

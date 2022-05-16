@@ -23,8 +23,9 @@ Debugging_Enable = False
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
 ICS_Introduced = True
-# for later use.
-IcDetectionTest = True
+# If above is true, please provide the name of the IC that works with skidl search function,
+# IC identification is a future feature,
+IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
 
 # stores chips corrds for later use- associting each pin with its corrsponding x,y cords
 IcCords = np.array([[1, 2, 3, 4]])        # dummy array intsilation
@@ -86,8 +87,7 @@ def DetectICsSilk(img):
             (x, y, w, h) = cv2.boundingRect(approx)
             
             print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
-            if IcDetectionTest:
-                IcCords = np.append(IcCords, [[int(x), int(y), int(x+w),int(y+h)]], axis=0)
+            IcCords = np.append(IcCords, [[int(x), int(y), int(x+w),int(y+h)]], axis=0)
             
             
             cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -117,80 +117,85 @@ if ICS_Introduced:
     cv2.waitKey(0)
 
 
-print("Ics at:", IcCords)
+    print("Ics at:", IcCords)
 
-ClosePinPoints = np.array([[1, 2], [3, 4]])        # dummy array intsilation
-ClosePinPoints = np.delete(ClosePinPoints, [0, 1], axis=0)    # clearing the array for inputs
+    ClosePinPoints = np.array([[1, 2], [3, 4]])        # dummy array intsilation
+    ClosePinPoints = np.delete(ClosePinPoints, [0, 1], axis=0)    # clearing the array for inputs
+    TempClosePinPoints = np.array([[1, 2], [3, 4]])
+    TempClosePinPoints = np.delete(TempClosePinPoints, [0, 1], axis=0)
 
+    ### BEFORE i write the connections (because i want to rewrite the file), i want to loop over EBP
+    ### and check (by seeing if the x or y (should be determined by the oriantion of the chip)
+    ### if it's close enough to the outer right or left line of the chip) to see if a prticular pin is an IC pin,
+    ### if it is i want to replace the in in the points file with something like this: lm336 Pin[1] Vcc [x,y]
+    ### and after the connection is found it should say this: 
+    ### lm336 Pin[1] Vcc [x,y] connected to: hc07 Pin[4] A0 [x,y] 
+    ### or if the other pin is a regular point: lm336 Pin[1] Vcc [x,y] connected to: [x,y] 
 
-### BEFORE i write the connections, i want to loop over EBP
-### and check (by seeing if the x or y (should be determined by the oriantion of the chip)
-### if it's close enough to the outer right or left line of the chip) to see if a prticular pin is an IC pin,
-### if it is i want to replace the in in the points file with something like this: lm336 Pin[1] Vcc [x,y]
-### and after the connection is found it should say this: 
-### lm336 Pin[1] Vcc [x,y] connected to: hc07 Pin[4] A0 [x,y] 
-### or if the other pin is a regular point: lm336 Pin[1] Vcc [x,y] connected to: [x,y] 
+    ### pseudo code:
+    ### loop EBP, check if the x is close to the x of ic
+    ### if it is, check the y: check if: Y of upper line - 20 < Y of point < Y of lower line + 20
+    ### if it is, put it in an array
+    ### replace every element of that array with the distance of that point to the right most point of the ic
+    ### sort the array to get the nearst point first => that becomes pin 1
+    ### Repeat for the left side of the array. For a four sided IC, the procces should be the same just with inverted y and x procedures.
+    #### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it.
+    for IcCord in IcCords:
+        print(f"Ic cords: {IcCord}")
+        print(f"right line x of Ic: {IcCord[2]}")
 
-### pseudo code:
-### loop EBP, check if the x is close to the x of ic
-### if it is, check the y: check if: Y of upper line - 20 < Y of point < Y of lower line + 20
-### if it is, put it in an array
-### replace every element of that array with the distance of that point to the right most point of the ic
-### sort the array to get the nearst point first => that becomes pin 1
-### Repeat for the left side of the array. For a four sided IC, the procces should be the same just with inverted y and x procedures.
-#### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it.
-for IcCord in IcCords:
-    print(f"Ic cords: {IcCord}")
-    print(f"right line x of Ic: {IcCord[2]}")
-    
-    RightMostPointOfIc = [IcCord[2],IcCord[1]]
-    LeftMostPointOfIC = [IcCord[0],IcCord[1]]
+        RightMostPointOfIc = [IcCord[2],IcCord[1]]
+        LeftMostPointOfIC = [IcCord[0],IcCord[1]]
 
-    for point in EntireBoardPoints:
-        # check x of point and x of right line of ic
-        if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
-            if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
-                ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
-            else: print("Failed y - right")
-        else: print("Failed x - right")
-        """
-        # check x of point vs x of left line of ic
-        if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
-            if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
-                ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
-            else: print("Failed y - left")
-        else: print("Failed x - left")
-        """
+        for point in EntireBoardPoints:
+            # check x of point and x of right line of ic
+            if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
+                if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
+                    ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
+                else: print("Failed y - right")
+            else: print("Failed x - right")
 
-    print(ClosePinPoints)
-    print(sortPointsByDistToRefPoint(RightMostPointOfIc, ClosePinPoints))
-    
+        ClosePinPoints = sortPointsByDistToRefPoint(RightMostPointOfIc, ClosePinPoints)
+        # now the same process for the left side TODO: loop only on UnAssociated points
+        for point in EntireBoardPoints:
+            # check x of point vs x of left line of ic
+            if(math.isclose(point[0], IcCord[0], rel_tol=0.2, abs_tol=10)):
+                if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
+                    TempClosePinPoints = np.append(TempClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
+                else: print("Failed y - left")
+            else: print("Failed x - left")
+        TempClosePinPoints = sortPointsByDistToRefPoint(LeftMostPointOfIC, TempClosePinPoints)
 
-    print(ClosePinPoints)
+        # now that we got the right order of pins set, the left order is just appened at the end
+        # That way i get the right order for the pinout 
+        ClosePinPoints = np.concatenate((ClosePinPoints, TempClosePinPoints))
 
-    sys.exit()
+        # for a 4 sided IC, should be the same process just with the x and y inverted: x,y = y,x
 
-    CurrentIC = list(filter(bool, [str.strip() for str in (str(show('MCU_Microchip_ATtiny','ATtiny841-SS'))).splitlines()]))
-    
-    if Write_Enable:
-        with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
-            filedata = file.read()
+        print(ClosePinPoints)
 
 
-        i = 1
-        for ClosePinPoint in ClosePinPoints:
-            print(ClosePinPoint)
-            # the skidl ic format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
-            # this takes care of it.
-            while f"/{i}/" not in CurrentIC[i]:
-                print("mistake.")
-                CurrentIC.append(CurrentIC.pop(i))
-                                                                         # "ATtiny841-SS ():" => "ATtiny841-SS"; "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"
-            filedata = filedata.replace(f'Point: [{ClosePinPoint[0]},{ClosePinPoint[1]}]', f'{CurrentIC[0][:-5]} | {CurrentIC[i][9:-1]} | [{ClosePinPoint[0]},{ClosePinPoint[1]}]')
-            i = i + 1
-        
-        with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'w') as file:
-            file.write(filedata)
+        CurrentIC = list(filter(bool, [str.strip() for str in (str(show(IcName[0],IcName[1]))).splitlines()]))
+
+        if Write_Enable:
+            with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
+                filedata = file.read()
+
+
+            i = 1
+            for ClosePinPoint in ClosePinPoints:
+                print(ClosePinPoint)
+                # the skidl ic format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
+                # this takes care of it.
+                while f"/{i}/" not in CurrentIC[i]:
+                    print("mistake.")
+                    CurrentIC.append(CurrentIC.pop(i))
+                                                                             # "ATtiny841-SS ():" => "ATtiny841-SS"; "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"
+                filedata = filedata.replace(f'Point: [{ClosePinPoint[0]},{ClosePinPoint[1]}]', f'{CurrentIC[0][:-5]} | {CurrentIC[i][9:-1]} | [{ClosePinPoint[0]},{ClosePinPoint[1]}]')
+                i = i + 1
+
+            with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'w') as file:
+                file.write(filedata)
 
 cnts = GetContours(img)
 
