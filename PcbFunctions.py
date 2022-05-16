@@ -90,8 +90,6 @@ def GetDominotColor(img):
         img.reshape(-1, img.shape[-1]), axis=0, return_counts=True)
     return colors[count.argmax()]
 
-
-
 def PutOnTopBigBlack(image):
     
     s_img = image
@@ -107,7 +105,7 @@ def PutOnTopBigBlack(image):
     cv2.destroyAllWindows()
     return l_img
 
-def DetectPointsV2(image, Debugging_Enabled = true):
+def DetectPointsV2(image, Debugging_Enabled = True):
     '''
     ## version 2 of DetectingCircles.\n
     This function takes an image and returns a numpy 3-diminisonal array contining all points.
