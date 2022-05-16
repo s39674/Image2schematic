@@ -42,23 +42,7 @@ if Debugging_Enable:
     DEBUGGING_FILE1 = open("Debugging/DEBUGGING_FILE1.txt", "w")
     DEBUGGING_FILE1.write("~~~---START---~~~\n")
 """
-    
 
-
-def PutOnTopBigBlack(image):
-    
-    s_img = image
-    l_img = cv2.imread('black.png')
-    
-    x_offset = 300
-    y_offset = 200
-    l_img[y_offset:y_offset+s_img.shape[0],
-          x_offset:x_offset+s_img.shape[1]] = s_img
-
-    cv2.imshow("test", l_img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    return l_img
 
 def DetectICsSilk(img):
     '''
@@ -138,6 +122,7 @@ print("Ics at:", IcCords)
 ClosePinPoints = np.array([[1, 2], [3, 4]])        # dummy array intsilation
 ClosePinPoints = np.delete(ClosePinPoints, [0, 1], axis=0)    # clearing the array for inputs
 
+
 ### BEFORE i write the connections, i want to loop over EBP
 ### and check (by seeing if the x or y (should be determined by the oriantion of the chip)
 ### if it's close enough to the outer right or left line of the chip) to see if a prticular pin is an IC pin,
@@ -146,50 +131,66 @@ ClosePinPoints = np.delete(ClosePinPoints, [0, 1], axis=0)    # clearing the arr
 ### lm336 Pin[1] Vcc [x,y] connected to: hc07 Pin[4] A0 [x,y] 
 ### or if the other pin is a regular point: lm336 Pin[1] Vcc [x,y] connected to: [x,y] 
 
-### psudo code:
+### pseudo code:
 ### loop EBP, check if the x is close to the x of ic
+### if it is, check the y: check if: Y of upper line - 20 < Y of point < Y of lower line + 20
 ### if it is, put it in an array
 ### replace every element of that array with the distance of that point to the right most point of the ic
 ### sort the array to get the nearst point first => that becomes pin 1
-#### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it
+### Repeat for the left side of the array. For a four sided IC, the procces should be the same just with inverted y and x procedures.
+#### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it.
 for IcCord in IcCords:
     print(f"Ic cords: {IcCord}")
     print(f"right line x of Ic: {IcCord[2]}")
-    RightMostPointOfIc = [IcCord[2],IcCord[3]]
     
+    RightMostPointOfIc = [IcCord[2],IcCord[1]]
+    LeftMostPointOfIC = [IcCord[0],IcCord[1]]
+
     for point in EntireBoardPoints:
         # check x of point and x of right line of ic
         if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
-            print("close enough!")
-            ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
+            if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
+                ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
+            else: print("Failed y - right")
+        else: print("Failed x - right")
+        """
+        # check x of point vs x of left line of ic
+        if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
+            if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
+                ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
+            else: print("Failed y - left")
+        else: print("Failed x - left")
+        """
+
     print(ClosePinPoints)
-    for point in ClosePinPoints:
-        point = calculateDistance(RightMostPointOfIc[0],RightMostPointOfIc[1],point[0],point[1])
-    # quick sort to get the nearst one, that will become pin1
-    ClosePinPoints = np.sort(ClosePinPoints,axis = 0)
+    print(sortPointsByDistToRefPoint(RightMostPointOfIc, ClosePinPoints))
+    
+
     print(ClosePinPoints)
 
+    sys.exit()
+
     CurrentIC = list(filter(bool, [str.strip() for str in (str(show('MCU_Microchip_ATtiny','ATtiny841-SS'))).splitlines()]))
-    with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
-        filedata = file.read()
-        
     
-    i = 1
-    for ClosePinPoint in ClosePinPoints:
-        print(ClosePinPoint)
-        # the skidl ic format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
-        # this takes care of it.
-        while f"/{i}/" not in CurrentIC[i]:
-            print("mistake.")
-            CurrentIC.append(CurrentIC.pop(i))
-            print(CurrentIC)
-        filedata = filedata.replace(f'Point: [{ClosePinPoint[0]},{ClosePinPoint[1]}]', f'{CurrentIC[0][:-5]} | {CurrentIC[i][9:-1]} | [{ClosePinPoint[0]},{ClosePinPoint[1]}]')
-        i = i + 1
+    if Write_Enable:
+        with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
+            filedata = file.read()
+
+
+        i = 1
+        for ClosePinPoint in ClosePinPoints:
+            print(ClosePinPoint)
+            # the skidl ic format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
+            # this takes care of it.
+            while f"/{i}/" not in CurrentIC[i]:
+                print("mistake.")
+                CurrentIC.append(CurrentIC.pop(i))
+                                                                         # "ATtiny841-SS ():" => "ATtiny841-SS"; "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"
+            filedata = filedata.replace(f'Point: [{ClosePinPoint[0]},{ClosePinPoint[1]}]', f'{CurrentIC[0][:-5]} | {CurrentIC[i][9:-1]} | [{ClosePinPoint[0]},{ClosePinPoint[1]}]')
+            i = i + 1
         
-        
-    
-    with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'w') as file:
-        file.write(filedata)
+        with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'w') as file:
+            file.write(filedata)
 
 cnts = GetContours(img)
 
@@ -310,7 +311,7 @@ for c in cnts:
         ContourBox = dst.copy()
 
 
-        print("############\nCONTOUR NUMBER: {}\n############".format(contour_counter))
+        #print("############\nCONTOUR NUMBER: {}\n############".format(contour_counter))
 
         
         ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox, Debugging_Enable)
@@ -318,8 +319,8 @@ for c in cnts:
         for Point in ContourBoxPoints:
             Point[0] = Point[0] + (x2)
             Point[1] = Point[1] + (y2)
-        print("ContourBoxPoints:\n", ContourBoxPoints)
-        print("EntireBoardPoints:\n", EntireBoardPoints)
+        #print("ContourBoxPoints:\n", ContourBoxPoints)
+        #print("EntireBoardPoints:\n", EntireBoardPoints)
         
         
         for Point1 in ContourBoxPoints:
@@ -327,21 +328,21 @@ for c in cnts:
             #Counter2 = 1
             for Point2 in EntireBoardPoints:
                 
-                print("COMPARING: ContourBoxPoints Point1: [{},{}]  EntireBoardPoints Point2: [{},{}]".format(
-                    Point1[0], Point1[1], Point2[0], Point2[1]))
+                #print("COMPARING: ContourBoxPoints Point1: [{},{}]  EntireBoardPoints Point2: [{},{}]".format(
+                #    Point1[0], Point1[1], Point2[0], Point2[1]))
                 if(math.isclose(Point1[0], Point2[0], rel_tol=0.02, abs_tol=0.0)):
-                    print("x is close enough")
+                    #print("x is close enough")
                     
                     if(math.isclose(Point1[1], Point2[1], rel_tol=0.02, abs_tol=0.0)):
-                        print("y is close enough - a match")
-                        print("Counter2 before: ", Counter2)
+                        #print("y is close enough - a match")
+                        #print("Counter2 before: ", Counter2)
                         
                         INDEX1 = EBP_String.find(
                             "[{},{}]".format(Point2[0], Point2[1]))
-                        print("index: ", INDEX1)
+                        #print("index: ", INDEX1)
                         
                         INDEX1 = (EBP_String.find("]", INDEX1)) + 1
-                        print("index: ", INDEX1)
+                        #print("index: ", INDEX1)
                         
                         
                         try:
@@ -354,12 +355,12 @@ for c in cnts:
                             elif (Counter2 == 1):
                                 Counter2 = 0
 
-                            print(EBP_String)
+                            #print(EBP_String)
                             break
                         except IndexError:
                             print("Error code 15: less than two points in contour.")
 
-                print("No match.")
+                #print("No match.")
 
         
         ###
