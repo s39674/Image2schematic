@@ -18,7 +18,7 @@ from skidl import search,show
 
 ImageName = "Board8.png"
 # Debug mode allows you to see the image processing more clearly
-Debugging_Enable = False
+Debugging_Enable = True
 # Choose to write the Connections to the PointsFile or not. 
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
@@ -164,11 +164,13 @@ if ICS_Introduced:
                     TempClosePinPoints = np.append(TempClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
                 else: print("Failed y - left")
             else: print("Failed x - left")
-        TempClosePinPoints = sortPointsByDistToRefPoint(LeftMostPointOfIC, TempClosePinPoints)
-
-        # now that we got the right order of pins set, the left order is just appened at the end
-        # That way i get the right order for the pinout 
-        ClosePinPoints = np.concatenate((ClosePinPoints, TempClosePinPoints))
+        
+        # IF TempClosePinPoints has no points, it cannot concatenate it (idk why)
+        if (len(TempClosePinPoints) > 0):
+            TempClosePinPoints = sortPointsByDistToRefPoint(LeftMostPointOfIC, TempClosePinPoints)
+            # now that we got the right order of pins set, the left order is just appened at the end
+            # That way i get the right order for the pinout 
+            ClosePinPoints = np.concatenate((ClosePinPoints, TempClosePinPoints))
 
         # for a 4 sided IC, should be the same process just with the x and y inverted: x,y = y,x
 
@@ -184,11 +186,10 @@ if ICS_Introduced:
 
             i = 1
             for ClosePinPoint in ClosePinPoints:
-                print(ClosePinPoint)
+                #print(ClosePinPoint)
                 # the skidl ic format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
                 # this takes care of it.
                 while f"/{i}/" not in CurrentIC[i]:
-                    print("mistake.")
                     CurrentIC.append(CurrentIC.pop(i))
                                                                              # "ATtiny841-SS ():" => "ATtiny841-SS"; "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"
                 filedata = filedata.replace(f'Point: [{ClosePinPoint[0]},{ClosePinPoint[1]}]', f'{CurrentIC[0][:-5]} | {CurrentIC[i][9:-1]} | [{ClosePinPoint[0]},{ClosePinPoint[1]}]')
@@ -316,7 +317,7 @@ for c in cnts:
         ContourBox = dst.copy()
 
 
-        #print("############\nCONTOUR NUMBER: {}\n############".format(contour_counter))
+        if Debugging_Enable: print("############\nCONTOUR NUMBER: {}\n############".format(contour_counter))
 
         
         ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox, Debugging_Enable)
@@ -324,8 +325,10 @@ for c in cnts:
         for Point in ContourBoxPoints:
             Point[0] = Point[0] + (x2)
             Point[1] = Point[1] + (y2)
-        #print("ContourBoxPoints:\n", ContourBoxPoints)
-        #print("EntireBoardPoints:\n", EntireBoardPoints)
+        
+        if Debugging_Enable:
+            print("ContourBoxPoints:\n", ContourBoxPoints)
+            print("EntireBoardPoints:\n", EntireBoardPoints)
         
         
         for Point1 in ContourBoxPoints:
@@ -333,8 +336,9 @@ for c in cnts:
             #Counter2 = 1
             for Point2 in EntireBoardPoints:
                 
-                #print("COMPARING: ContourBoxPoints Point1: [{},{}]  EntireBoardPoints Point2: [{},{}]".format(
-                #    Point1[0], Point1[1], Point2[0], Point2[1]))
+                if Debugging_Enable:
+                    print("COMPARING: ContourBoxPoints Point1: [{},{}]  EntireBoardPoints Point2: [{},{}]".format(
+                        Point1[0], Point1[1], Point2[0], Point2[1]))
                 if(math.isclose(Point1[0], Point2[0], rel_tol=0.02, abs_tol=0.0)):
                     #print("x is close enough")
                     

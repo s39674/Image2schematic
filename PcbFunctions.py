@@ -1,10 +1,7 @@
 import math
-from re import I
 import numpy as np
 import cv2
 import sys
-
-from collections import Counter
 import os
 
 
@@ -253,7 +250,9 @@ def DetectPointsV2(image, Debugging_Enabled = True):
                 Already_Found = False
 
         elif Num_Points_Found < 2:
-            print("Error code: 10 - Image matching Cannot find points :(")
+            print("Error - Image matching Cannot find points :(")
+    else:
+        print("Both points found!")
 
     print("Num_Points_Found after image matching: ", Num_Points_Found)
     #cv2.imshow('thresh', thresh)
