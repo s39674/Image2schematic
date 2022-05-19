@@ -21,7 +21,7 @@ There are multiple stages needed for this project:
 
 2. Using `OpenCV`, we need to understand the pin to pin traces, and assign each pin with it's corrosponding x and y coordinates.
 
-    **SITREP**: very far into it, need to upload the files to github.
+    **SITREP**: Very far into it. `Board8.png` works very good.
 
 3. Using `OpenCV` OR `tesseract`, we need the understand the text on the ICs that are on the board, and then pass that into skidl search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
 
@@ -29,7 +29,7 @@ There are multiple stages needed for this project:
 
 4. Using all this data metioned above, and using skidl, we will make a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
 
-    **SITREP**: very close to outputing a test schematic using skidl syntax, lots of discussion on his repo.
+    **SITREP**: very close to outputing a test schematic using skidl syntax, a lot discussion on `skidl` repo.
 
 
 ## Testing
@@ -63,7 +63,7 @@ $ python3 ConnectionFinding.py
 
 If you now look at `PointsFileFor_Board8.png.txt` you should now see every connection from any point: 
 
-```
+```txt
 Point: [435,479] connected to: (191,171)
 Point: [435,466] connected to: (191,144)
 Point: [435,453] connected to: (191,117)
