@@ -16,9 +16,9 @@ import numpy as np
 from PcbFunctions import *
 from skidl import search,show
 
-ImageName = "Board8.png"
+ImageName = "Board9.png"
 # Debug mode allows you to see the image processing more clearly
-Debugging_Enable = True
+Debugging_Enable = False
 # Choose to write the Connections to the PointsFile or not. 
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
@@ -45,7 +45,7 @@ if Debugging_Enable:
 """
 
 
-def DetectICsSilk(img):
+def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     '''
     This function detects an ICs silk traces (where an ICs should be placed) and hides it, that
     needed for a better trace finding. This function also populates IcCords for future analysis.
@@ -63,11 +63,10 @@ def DetectICsSilk(img):
     
     
     
-    lower_val = np.array([200, 200, 200])
+    lower_val = np.array([170, 170, 170])
     upper_val = np.array([255, 255, 255])
     
     mask = cv2.inRange(img, lower_val, upper_val)
-    
 
     
     cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL,
@@ -82,7 +81,7 @@ def DetectICsSilk(img):
         area = cv2.contourArea(c)
         print("Area: ", area)
         
-        if len(approx) == 4 and area > 100 and area < 70000:
+        if len(approx) == 4 and area > Threshold_AreaMin and area < Threshold_AreaMax:
             
             (x, y, w, h) = cv2.boundingRect(approx)
             
@@ -115,8 +114,7 @@ if ICS_Introduced:
     img = DetectICsSilk(img)
     cv2.imshow('Ics removed', img)
     cv2.waitKey(0)
-
-
+    
     print("Ics at:", IcCords)
 
     ClosePinPoints = np.array([[1, 2], [3, 4]])        # dummy array intsilation
@@ -140,6 +138,7 @@ if ICS_Introduced:
     ### sort the array to get the nearst point first => that becomes pin 1
     ### Repeat for the left side of the array. For a four sided IC, the procces should be the same just with inverted y and x procedures.
     #### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it.
+
     for IcCord in IcCords:
         print(f"Ic cords: {IcCord}")
         print(f"right line x of Ic: {IcCord[2]}")
@@ -156,7 +155,7 @@ if ICS_Introduced:
             else: print("Failed x - right")
 
         ClosePinPoints = sortPointsByDistToRefPoint(RightMostPointOfIc, ClosePinPoints)
-        # now the same process for the left side TODO: loop only on UnAssociated points
+        # now the same process for the left side TODO: loop only on UnAssociated points based on class property. look at the dev branch for classes
         for point in EntireBoardPoints:
             # check x of point vs x of left line of ic
             if(math.isclose(point[0], IcCord[0], rel_tol=0.2, abs_tol=10)):
@@ -226,7 +225,7 @@ ContourBoxPoints = np.delete(ContourBoxPoints, [0, 1], axis=0)
 starting_contour_number = 0
 
 
-
+# used to calculate the epsilon for approxPolyDP() => https://stackoverflow.com/questions/62274412/cv2-approxpolydp-cv2-arclength-how-these-works
 epsilon_value = 0.0009
 
 
@@ -269,7 +268,7 @@ for c in cnts:
         
         pts = pts - pts.min(axis=0)
 
-        print(croped.shape[:2])
+        #print(croped.shape[:2])
         
         CroppingMask = np.zeros(croped.shape[:2], np.uint8)
         #CroppingMask = np.full_like(croped, (255, 0, 0))
@@ -322,6 +321,11 @@ for c in cnts:
         
         ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox, Debugging_Enable)
         
+        # After i got all the board points which are inside the Contour box, i need to pair those with EntireBoardPoint
+        # According to this formula: X (EntireBoardPoint) = X (In ContourBox) + X (Where box starts), same with Y
+        # X (where box starts) = x2
+        # Y (where box starts) = y2
+
         for Point in ContourBoxPoints:
             Point[0] = Point[0] + (x2)
             Point[1] = Point[1] + (y2)
@@ -353,17 +357,13 @@ for c in cnts:
                         INDEX1 = (EBP_String.find("]", INDEX1)) + 1
                         #print("index: ", INDEX1)
                         
-                        
+                        # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
                         try:
                             EBP_String = EBP_String[:INDEX1] + \
                                 " connected to: ({},{})".format(
                                     ContourBoxPoints[Counter2][0], ContourBoxPoints[Counter2][1]) + EBP_String[INDEX1:]
-                                                        
-                            if Counter2 == 0:
-                                Counter2 = 1
-                            elif (Counter2 == 1):
-                                Counter2 = 0
-
+   
+                            Counter2 = int(not Counter2)
                             #print(EBP_String)
                             break
                         except IndexError:
@@ -445,7 +445,6 @@ out = out[topy:bottomy+1, topx:bottomx+1]
     '''
 
 cv2.imshow('mask', out)
-cv2.waitKey(0)
 
 cv2.imshow('Objects Detected', img)
 cv2.waitKey(0)

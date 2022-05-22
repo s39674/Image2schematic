@@ -29,7 +29,7 @@ There are multiple stages needed for this project:
 
 4. Using all this data metioned above, and using skidl, we will make a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
 
-    **SITREP**: very close to outputing a test schematic using skidl syntax, a lot discussion on `skidl` repo.
+    **SITREP**: very close to outputing a test schematic using skidl syntax, a lot of discussion on `skidl` repo.
 
 
 ## Testing
@@ -51,9 +51,9 @@ $ python3 detectingPoints.py
 
 now you should have `PointsFileFor_Board8.png.txt` file under `output/Files`. This file should include all the coordinates (x,y) of the board electrical points.
 
-Currently there is just one example: `Board8.png`, but feel free to try it on other board images and post your result in the `Discussions` tab.
+Currently there are just two examples: `Board8.png` and `Board9.png`, but feel free to try it on other board images and post your result in the `Discussions` tab.
 
-<p align="left"><img src="assets/Example_images/Board_images/Board8.png" alt="assets/Example_images/Board_images/Board7.png" width="400"/></p>
+<p align="left"><img src="assets/Example_images/Board_images/Board8.png" alt="assets/Example_images/Board_images/Board8.png" width="400"/></p>
 
 After that, run `ConnectionFinding.py`:
 
@@ -78,7 +78,7 @@ ATtiny841-S | 2/XTAL1/PB0/BIDIRECTIONA | [190,64] connected to: (435,426)
 ATtiny841-S | 1/VCC/POWER-I | [190,37] connected to: (435,406)
 ```
 
-What we can see are the x,y coordinates of the points, and the x,y coordinates of what point is connected to it. At the bottom we can see what IC is connected to those points and some information about them.
+What we can see are the x,y coordinates of the points, and the x,y coordinates of what point is connected to it. At the bottom we can see what IC is connected to those points and some information about them. (In this example the IC name was hard-coded, IC detection is not ready yet)
 
 This is the baseline to building an entire schematic.
 
@@ -86,9 +86,9 @@ If you encountered any issues during installation or testing of `Image2schematic
 
 ## Few topics i need help with:
 
-- building a class for each point and IC
-- more than 2 point connection finding
-- skidl to schematic algorithm
+- Building a class for each point and IC - please see the dedicated branch on this topic.
+- More than 2 point connection finding - right now I can't detect lines that connect 3 different components to each other.
+- Skidl_to_schematic algorithm - I can't get the algorithm that take skidl code and output a schematic to work.
 
 I want to thank you for reading this and i hope you can help me, thank you!
 

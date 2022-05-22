@@ -187,7 +187,8 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     # as there should be just two points, there's either a circ & circ, circ & rect, rect & circ, rect & rect.
     # BUG: if a circ or a rect point already found, than it may find the same thing and just goes on
     if Num_Points_Found < 2:
-        print("Found less than two points! trying to find others using image matching!")
+        print("NOTE: on this run, I found less than two points -> trying to find others using image matching!")
+        
         Already_Found = False
         # return x,y,w,h of the image of the point inside the bigger image
         # what do i do if there are two rect or two circles?
