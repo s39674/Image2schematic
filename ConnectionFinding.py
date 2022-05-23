@@ -7,6 +7,7 @@ This program also associate every point with an IC that's connected to it.
 All the data then gets writen to a new points file.
 """
 
+
 from cmath import pi
 import math
 import sys
@@ -33,7 +34,9 @@ IcCords = np.delete(IcCords, 0, axis=0)    # clearing the array for inputs
 print(IcCords)
 
 img = cv2.imread(
-    'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
+    f'assets/Example_images/Board_images/{ImageName}', cv2.IMREAD_COLOR
+)
+
 if img is None:
     sys.exit("Could not read the image.")
 
@@ -56,19 +59,19 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     IcsDetected = img.copy()
     copy = img.copy()
     global IcCords
-    
+
     BoardColor = GetDominotColor(img)
-    
-    
-    
-    
-    
+
+
+
+
+
     lower_val = np.array([170, 170, 170])
     upper_val = np.array([255, 255, 255])
-    
+
     mask = cv2.inRange(img, lower_val, upper_val)
 
-    
+
     cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
 
@@ -80,20 +83,20 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
         print("Approx: ", len(approx))
         area = cv2.contourArea(c)
         print("Area: ", area)
-        
+
         if len(approx) == 4 and area > Threshold_AreaMin and area < Threshold_AreaMax:
             
             (x, y, w, h) = cv2.boundingRect(approx)
-            
-            print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
+
+            print(f"found ic at: {x},{y} to: {x + w},{y + h}")
             IcCords = np.append(IcCords, [[int(x), int(y), int(x+w),int(y+h)]], axis=0)
-            
-            
+
+
             cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            
+
             cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
                           (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
-            
+
     return img
 
 

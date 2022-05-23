@@ -37,9 +37,17 @@ def click_event(event, x, y, flags, params):
         # displaying the coordinates
         # on the image window
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img, str(x) + ',' +
-                    str(y), (x, y), font,
-                    0.7, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(
+            img,
+            (f'{str(x)},' + str(y)),
+            (x, y),
+            font,
+            0.7,
+            (255, 255, 255),
+            1,
+            cv2.LINE_AA,
+        )
+
 
         cv2.circle(img, (x, y), 2, (0, 0, 0), -1)
 
@@ -59,10 +67,9 @@ ImageName = "Board9.png"
 write_to_file = True
 
 # Write all the points to a file for further analysis by ConnectionFinding.py
-if(write_to_file):
+if write_to_file:
     try:
-        POINTS_FILE = open(
-            "output/Files/PointsFileFor_{}.txt".format(ImageName), "w")
+        POINTS_FILE = open(f"output/Files/PointsFileFor_{ImageName}.txt", "w")
         POINTS_FILE.write("EntireBoardPoints program:\n")
     except OSError as e:
         sys.exit("Could not open directory to output the Points file to. error: ", e)
@@ -72,7 +79,10 @@ if(write_to_file):
 
 # cv2.namedWindow("output", cv2.WINDOW_FREERATIO)
 
-img = cv2.imread('assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
+img = cv2.imread(
+    f'assets/Example_images/Board_images/{ImageName}', cv2.IMREAD_COLOR
+)
+
 if img is None:
     sys.exit("Could not read the image.")
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -99,7 +109,7 @@ cv2.setMouseCallback('original image', click_event)
 # input handler
 input = cv2.waitKey(0)
 
-while(input != 27 and input != -1):  # input != esc
+while input not in [27, -1]:  # input != esc
     print(input)
 
     if(input == 114):  # input == R; ==> Reset Pic

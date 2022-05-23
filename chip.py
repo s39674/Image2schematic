@@ -25,8 +25,8 @@ class chip:
         self.point1 = point()
         self.point2 = point()
 
-    def CalculateDistFromRightMostPoint(Point):
+    def CalculateDistFromRightMostPoint(self):
         pass
 
-    def CalculateDistFromleftMostPoint(Point):
+    def CalculateDistFromleftMostPoint(self):
         pass
