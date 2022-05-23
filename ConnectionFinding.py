@@ -23,6 +23,7 @@ Debugging_Enable = False
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
 ICS_Introduced = True
+IC_detectTest = False
 # If above is true, please provide the name of the IC that works with skidl search function,
 # IC identification is a future feature,
 IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
@@ -177,8 +178,8 @@ if ICS_Introduced:
 
 
         CurrentIC = list(filter(bool, [str.strip() for str in (str(show(IcName[0],IcName[1]))).splitlines()]))
-
-        if Write_Enable:
+        print(CurrentIC)
+        if Write_Enable and IC_detectTest:
             with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
                 filedata = file.read()
 
