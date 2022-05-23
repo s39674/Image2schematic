@@ -7,6 +7,8 @@ import sys
 from collections import Counter
 import os
 
+from chip import *
+from point import *
 
 
 # images of points, used for image matching
@@ -135,7 +137,7 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     # clearing the array for inputs
     BoardPointsArray = np.delete(BoardPointsArray, [0, 1], axis=0)
 
-    # finding rectangles
+    # finding rectangle pcb points
     cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
