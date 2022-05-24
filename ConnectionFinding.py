@@ -16,6 +16,7 @@ import numpy as np
 from PcbFunctions import *
 from skidl import search,show
 
+# Please change this value according to your image name
 ImageName = "Board9.png"
 # Debug mode allows you to see the image processing more clearly
 Debugging_Enable = False
@@ -344,31 +345,27 @@ for c in cnts:
                 if Debugging_Enable:
                     print("COMPARING: ContourBoxPoints Point1: [{},{}]  EntireBoardPoints Point2: [{},{}]".format(
                         Point1[0], Point1[1], Point2[0], Point2[1]))
-                if(math.isclose(Point1[0], Point2[0], rel_tol=0.02, abs_tol=0.0)):
-                    #print("x is close enough")
+                
+                if isThosePointsTheSame(Point1[0], Point1[1], Point2[0],Point2[1], rel_tol=0.02, abs_tol=0.0):
+                        
+                    INDEX1 = EBP_String.find(
+                        "[{},{}]".format(Point2[0], Point2[1]))
+                    #print("index: ", INDEX1)
                     
-                    if(math.isclose(Point1[1], Point2[1], rel_tol=0.02, abs_tol=0.0)):
-                        #print("y is close enough - a match")
-                        #print("Counter2 before: ", Counter2)
-                        
-                        INDEX1 = EBP_String.find(
-                            "[{},{}]".format(Point2[0], Point2[1]))
-                        #print("index: ", INDEX1)
-                        
-                        INDEX1 = (EBP_String.find("]", INDEX1)) + 1
-                        #print("index: ", INDEX1)
-                        
-                        # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
-                        try:
-                            EBP_String = EBP_String[:INDEX1] + \
-                                " connected to: ({},{})".format(
-                                    ContourBoxPoints[Counter2][0], ContourBoxPoints[Counter2][1]) + EBP_String[INDEX1:]
-   
-                            Counter2 = int(not Counter2)
-                            #print(EBP_String)
-                            break
-                        except IndexError:
-                            print("Error code 15: less than two points in contour.")
+                    INDEX1 = (EBP_String.find("]", INDEX1)) + 1
+                    #print("index: ", INDEX1)
+                    
+                    # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
+                    try:
+                        EBP_String = EBP_String[:INDEX1] + \
+                            " connected to: ({},{})".format(
+                                ContourBoxPoints[Counter2][0], ContourBoxPoints[Counter2][1]) + EBP_String[INDEX1:]
+
+                        Counter2 = int(not Counter2)
+                        #print(EBP_String)
+                        break
+                    except IndexError:
+                        print("Error code 15: less than two points in contour.")
 
                 #print("No match.")
 

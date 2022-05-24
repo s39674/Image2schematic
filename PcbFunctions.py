@@ -1,8 +1,10 @@
+
 import math
 import numpy as np
 import cv2
 import sys
 import os
+
 
 
 
@@ -182,7 +184,7 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         cv2.imshow('Both_Rec&Circs_DetectedByV2', copy)
 
     print("Num_Points_Found before image matching: ", Num_Points_Found)
-
+    print(BoardPointsArray)
     # if only found one point or less, try to find using image matching
     # as there should be just two points, there's either a circ & circ, circ & rect, rect & circ, rect & rect.
     # BUG: if a circ or a rect point already found, than it may find the same thing and just goes on
@@ -192,68 +194,44 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         Already_Found = False
         # return x,y,w,h of the image of the point inside the bigger image
         # what do i do if there are two rect or two circles?
-        rect = Template_matching(image, RectPointRight_img, 0.81, Debugging_Enabled)
-        circ = Template_matching(image, CircPoint_img, 0.81, Debugging_Enabled)
-        #rect = -1
-        #circ = -1
+        rect = Template_matching(image, RectPointRight_img, 0.81, Debugging_Enabled, BoardPointsArray)
 
-       # check for a rect match
-        if rect != -1:
-            # checking if its the already found point - 15~ pixels margin - a bit more then usual as the two points that are inside one contour should be
-            # quite seperate from each other, added ab absoulte too, COULD BE A PROBLEM!
+        if rect:
+            print("Found a rect")
+            cv2.rectangle(copy, (rect[0], rect[1]), (rect[0] +
+                                                     rect[2], rect[1]+rect[3]), (0, 0, 255), 2)
+            print("rectInDetectingPoints: x1,y1: {},{}; x2,y2: {},{}".format(
+                rect[0], rect[1], rect[0] + rect[2],  rect[1]+rect[3]))
+            # entering the middle point of the rect
+            # [ [ w / 2 + x, h / 2 + y ] ]
+            BoardPointsArray = np.append(
+                BoardPointsArray, [[int((rect[2]/2)+rect[0]), int((rect[3]/2)+rect[1])]], axis=0)
+            print("point: x1,y1: {},{};".format(
+                int((rect[2]/2)+rect[0]), int((rect[3]/2)+rect[1])))
+            Num_Points_Found += 1
+        
+        circ = Template_matching(image, CircPoint_img, 0.81, Debugging_Enabled, BoardPointsArray, isRect=False)
 
-            if(Num_Points_Found == 1):
-                if(math.isclose(BoardPointsArray[0][0], int((rect[2]/2)+rect[0]), rel_tol=0.15, abs_tol=10.0)):
-                    # x is close enough
-                    # check for y, - ~10 pixels margin of error
-                    if(math.isclose(BoardPointsArray[0][1], int((rect[3]/2)+rect[1]), rel_tol=0.15, abs_tol=10.0)):
-                        print("Already found that Rectagle point")
-                        Already_Found = True
+        if circ:
+            print("Found a circ")
+            # draw a point
+            cv2.circle(copy, (circ[0], circ[1]), 1, (0, 0, 255), 2)
+            print("rectInDetectingPoints: x1,y1: {},{}; x2,y2: {},{}".format(
+                circ[0], circ[1], circ[0] + circ[2],  circ[1]+circ[3]))
+            # entering the left most point - as this algorithm has a very hard time finding circle points
+            BoardPointsArray = np.append(
+                BoardPointsArray, [[int(circ[0]), int(circ[1])]], axis=0)
+            print("EntirePointDetectingcircls: ", BoardPointsArray)
+            Num_Points_Found += 1
 
-            # if that's not the aleady found point, then add draw it and add it to the database
-            if Already_Found == False:
-                print("Found a rect")
-                cv2.rectangle(copy, (rect[0], rect[1]), (rect[0] +
-                                                         rect[2], rect[1]+rect[3]), (0, 0, 255), 2)
-                print("rectInDetectingPoints: x1,y1: {},{}; x2,y2: {},{}".format(
-                    rect[0], rect[1], rect[0] + rect[2],  rect[1]+rect[3]))
-                # entering the middle point of the rect
-                # [ [ w / 2 + x, h / 2 + y ] ]
-                BoardPointsArray = np.append(
-                    BoardPointsArray, [[int((rect[2]/2)+rect[0]), int((rect[3]/2)+rect[1])]], axis=0)
-                print("point: x1,y1: {},{};".format(
-                    int((rect[2]/2)+rect[0]), int((rect[3]/2)+rect[1])))
-                Num_Points_Found += 1
-                Already_Found = False
-
-       # check for a circle match
-        if circ != -1 and Num_Points_Found < 2:
-            # checking if its the already found point - 15~ pixels margin
-            if(Num_Points_Found == 1):
-                if(math.isclose(BoardPointsArray[0][0], int(circ[0]), rel_tol=0.15, abs_tol=10.0)):
-                    # x is close enough
-                    # check for y, - ~10 pixels margin of error
-                    if(math.isclose(BoardPointsArray[0][1], int(circ[1]), rel_tol=0.15, abs_tol=10.0)):
-                        print("Already found that Circler point!")
-                        Already_Found = True
-
-            if Already_Found == False:
-                print("Found a circ")
-                # draw a point
-                cv2.circle(copy, (circ[0], circ[1]), 1, (0, 0, 255), 2)
-                print("rectInDetectingPoints: x1,y1: {},{}; x2,y2: {},{}".format(
-                    circ[0], circ[1], circ[0] + circ[2],  circ[1]+circ[3]))
-                # entering the left most point, this is the best i have ok?
-                BoardPointsArray = np.append(
-                    BoardPointsArray, [[int(circ[0]), int(circ[1])]], axis=0)
-                print("EntirePointDetectingcircls: ", BoardPointsArray)
-                Num_Points_Found += 1
-                Already_Found = False
-
-        elif Num_Points_Found < 2:
-            print("Error - Image matching Cannot find points :(")
+        if Num_Points_Found < 2:
+            print("Error - Image matching Cannot find all points :(")
+        if Num_Points_Found > 2:
+            print("Error: 3 or more point found.")
+            print(f"array points: {BoardPointsArray} ")
+        
     else:
-        print("Both points found!")
+        print("2 points found!")
 
     print("Num_Points_Found after image matching: ", Num_Points_Found)
     #cv2.imshow('thresh', thresh)
@@ -262,18 +240,20 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     return BoardPointsArray, copy
 
 
-def Template_matching(img, Img_Point, DesValue, Debug_Enable):
+def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, AlreadyFoundPoints = None, isRect = True):
     '''
     A function that looks for an image inside of another img.\n
-    If the threshold is less than DesValue, the function would return -1
-    Note: Super dumb algorithm that just sweeps through the image trying to find the perfect match.
-    Should not be used for anything sensitive.
+    If the threshold is less than DesValue, the function would return None
+
     Input: the image that The point should be inside it, The image of how the point should look like,
     A value used to filter false positives.
-    Output: The x,y,w,h of where the Img_Point is inside img OR a -1 if threshold not meeted. The function always returns something.
+    Output: The x,y,w,h of where the Img_Point is inside img OR a None if threshold not meeted. The function always returns something.
     @img the image that the algorthim should find Img_Point inside
     @Img_Point the image that should be found inside img
     @DesValue a value used to filter false positives
+    @Debug_Enable show verbose printing and image processing
+    @AlreadyFoundPoints optinal parameter to avoid getting points that are already detected
+    @IsRect - because this function flag circle point middle point as the left-up most point and rect point as sort middle point, need to diff between them 
     '''
     if(Debug_Enable):
         cv2.imshow("TMStartImg", img)
@@ -281,9 +261,9 @@ def Template_matching(img, Img_Point, DesValue, Debug_Enable):
 
     # a variable to store the matched cordienates instances of the rect of where
     # the Matched image was found. [x,y,w,h]
-    MatchingRectCordArray = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
+    #MatchingRectCordArray = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
     # clearing the array for inputs
-    MatchingRectCordArray = np.delete(MatchingRectCordArray, np.s_[:], axis=0)
+    #MatchingRectCordArray = np.delete(MatchingRectCordArray, np.s_[:], axis=0)
 
     #img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     #Img_Point_gray = cv2.cvtColor(Img_Point, cv2.COLOR_BGR2GRAY)
@@ -335,11 +315,23 @@ def Template_matching(img, Img_Point, DesValue, Debug_Enable):
     if(maxVal > DesValue):
         # Draw the rectangle:
         # Extract the coordinates of our best match
-        x, y = mnLoc
+        x, y = maxLoc
 
         # Step 2: Get the size of the template. This is the same size as the match.
         h, w = Img_Point.shape[:2]
 
+        # If we get something in alreadyFoundPoints, Lets throw those points in a check
+        # as we got an area, just take the middle point and compare that.
+        if AlreadyFoundPoints is not None:
+            if isRect:
+                for Point in AlreadyFoundPoints:
+                    if isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
+                        return None
+            else:
+                for Point in AlreadyFoundPoints:
+                    if isThosePointsTheSame( x, y, Point[0], Point[1] ):
+                        return None
+            
         cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
         if Debug_Enable:
             print("Threshold meeted: boxInTemplateMatching: x1,y1: {},{}; x2,y2: {},{}".format(
@@ -357,8 +349,8 @@ def Template_matching(img, Img_Point, DesValue, Debug_Enable):
         if Debug_Enable:
             print("Threshold not meeted")
             # for threshold
-            cv2.waitKey(0)
-        return -1
+            #cv2.waitKey(0)
+        return None
 
 # Math functions
 def calculateDistance(x1,y1,x2,y2):
@@ -373,6 +365,22 @@ def sortPointsByDistToRefPoint(refPoint, Points):
     This function sorts an array of points based on their distance to a reference point.
     """
     return np.array(sorted(Points,key=lambda point:calculateDistance(refPoint[0],refPoint[1],*point)))
+
+def isThosePointsTheSame(x1: int, y1: int, x2: int, y2: int, rel_tol: float = 0.15, abs_tol: float = 10.0) -> bool :
+    """
+    This function return True/False based on if two input points are close enough to be called
+    The same.
+    """
+    print(f"is those the same? x1,y1: {x1},{y1} x2,y2: {x2},{y2}")
+    # checking if x is the same;  ~10 abs pixels margin
+    if(math.isclose(x1, x2, rel_tol=rel_tol, abs_tol=abs_tol)):
+        # x is close enough
+        # check for y; ~10 pixels abs margin of error
+        if(math.isclose(y1, y2, rel_tol=rel_tol, abs_tol=abs_tol)):
+            return True
+
+    return False
+
 
 # IC info string functions
 
