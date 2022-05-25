@@ -7,7 +7,6 @@ This program also associate every point with an IC that's connected to it.
 All the data then gets writen to a new points file.
 """
 
-from cmath import pi
 import math
 import sys
 import cv2
@@ -17,14 +16,14 @@ from PcbFunctions import *
 from skidl import search,show
 
 # Please change this value according to your image name
-ImageName = "Board9.png"
+ImageName = "Board8.png"
 # Debug mode allows you to see the image processing more clearly
 Debugging_Enable = False
 # Choose to write the Connections to the PointsFile or not. 
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
 ICS_Introduced = True
-IC_detectTest = False
+IC_detectTest = True
 # If above is true, please provide the name of the IC that works with skidl search function,
 # IC identification is a future feature,
 IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
@@ -54,20 +53,22 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     input: An image that the function should find the ics silk traces inside
     output: An image with those Silk traces removed
     '''
-
-    IcsDetected = img.copy()
-    copy = img.copy()
+    # making the IcCords a global so i modify it and the modifcation will stay after the function
+    # TODO: make the function return this
     global IcCords
+    IcsDetected = img.copy()
     
+    # a variable that stores the bgr color value of the board. Its used for hiding the silk trace with a rectangle whose color is this variable
+    # this assusmes the most used color is the color of the board!
     BoardColor = GetDominotColor(img)
     
     
     
     
-    
+    # setting lower and upper limit of the color, should be white for silk traces
     lower_val = np.array([170, 170, 170])
     upper_val = np.array([255, 255, 255])
-    
+    # Threshold the bgr image to get only that range of colors
     mask = cv2.inRange(img, lower_val, upper_val)
 
     
@@ -90,16 +91,16 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
             IcCords = np.append(IcCords, [[int(x), int(y), int(x+w),int(y+h)]], axis=0)
             
-            
+            # show what ics got detected
             cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            
+            # hiding that silk trace with a rectangle whose color is the same as the entire board
             cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
                           (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
             
     return img
 
 
-
+# get the EntireBoardPoints from the file
 try:
     EntireBoardPointsFile = open(
         "output/Files/PointsFileFor_{}.txt".format(ImageName), "r")
@@ -113,6 +114,7 @@ cv2.imshow('Original Image', img)
 cv2.waitKey(0)
 
 if ICS_Introduced:
+    # removing Ics silk traces so it will not corrupt the output
     img = DetectICsSilk(img)
     cv2.imshow('Ics removed', img)
     cv2.waitKey(0)
@@ -204,17 +206,9 @@ cnts = GetContours(img)
 CroppingMaskV2 = np.zeros_like(img)
 
 
-""" # for future use
-dp = 1
-min_dist = 0.1  
-param_1 = 200
-param_2 = 15
-min_Radius = 0
-max_Radius = 15
-"""
-
 contour_counter = 0
 
+# an array to store the contour x,y cords
 pts = np.array([[1, 2], [3, 4]])        
 pts = np.delete(pts, [0, 1], axis=0)    
 
@@ -233,7 +227,7 @@ epsilon_value = 0.0009
 
 Counter2 = 1
 
-
+# looping on each contour - which is actually the wire, and marking the two points inside it as "connected"
 for c in cnts:
     
     Counter2 = 1
@@ -250,7 +244,7 @@ for c in cnts:
             y1 = n[i + 1]
             
             
-            
+            # the first contour is actually the background, so just ignore that.
             if(contour_counter > starting_contour_number):
                 
                 pts = np.append(pts, [[x1, y1]], axis=0)
@@ -350,10 +344,8 @@ for c in cnts:
                         
                     INDEX1 = EBP_String.find(
                         "[{},{}]".format(Point2[0], Point2[1]))
-                    #print("index: ", INDEX1)
                     
                     INDEX1 = (EBP_String.find("]", INDEX1)) + 1
-                    #print("index: ", INDEX1)
                     
                     # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
                     try:
@@ -392,17 +384,18 @@ for c in cnts:
 
         '''
 
+        # exporting all.
+        if Debugging_Enable:
+            cv2.imwrite('output/Images/{}croped.png'.format(
+                contour_counter), croped)
+            cv2.imwrite('output/Images/{}mask.png'.format(
+                contour_counter), CroppingMask)
+            cv2.imwrite('output/Images/{}dst.png'.format(
+                contour_counter), dst)
 
-        cv2.imwrite('output/Images/{}croped.png'.format(
-            contour_counter), croped)
-        cv2.imwrite('output/Images/{}mask.png'.format(
-            contour_counter), CroppingMask)
-        cv2.imwrite('output/Images/{}dst.png'.format(
-            contour_counter), dst)
-        
-        
-        cv2.imwrite('output/Images/{}PointsInContourBox.png'.format(
-            contour_counter), ContourBox)
+
+            cv2.imwrite('output/Images/{}PointsInContourBox.png'.format(
+                contour_counter), ContourBox)
 
     ####
     

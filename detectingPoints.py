@@ -55,7 +55,7 @@ EntireBoardPoints = np.array([[1, 2], [3, 4]])
 EntireBoardPoints = np.delete(EntireBoardPoints, [0, 1], axis=0)
 
 # SET BEFORE USE!
-ImageName = "Board9.png"
+ImageName = "Board8.png"
 write_to_file = True
 
 # Write all the points to a file for further analysis by ConnectionFinding.py
