@@ -8,9 +8,7 @@ as well as showing an x and y coordinates for a clicked pixel.
 import numpy as np
 import cv2
 import sys
-from collections import Counter
 import os
-from numpy.lib.function_base import copy
 from PcbFunctions import *
 
 print("~~~---START - Detecting Points---~~~")
