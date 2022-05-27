@@ -11,7 +11,9 @@ class chip:
     # down right most cornor
     DownRightMostPoint = point()
     
-    def __init__(self, UpLeftMostPoint = None, DownRightMostPoint = None, IcName = None, pins: list[point] = None):
+    ConnectedToPCB = None
+
+    def __init__(self, UpLeftMostPoint = None, DownRightMostPoint = None, IcName = None, pins: list[point] = None, ConnectedToPCB = None) -> None:
         if UpLeftMostPoint: self.UpLeftMostPoint = UpLeftMostPoint
         else: self.UpLeftMostPoint = point()
 
@@ -21,16 +23,16 @@ class chip:
         if pins: 
             self.pins = pins
             # looping over recived pins to set the ConnectedToIC variable
-            for point in pins:
-                point.ConnectedToChip = self
+            for point in pins: point.ConnectedToChip = self
+
         if IcName: self.IcName = IcName
+        if ConnectedToPCB: self.ConnectedToPCB = ConnectedToPCB
 
-
-    def CalculateDistFromRightMostPointToArbPoint(self, Point: point):
+    def CalculateDistFromRightMostPointToArbPoint(self, Point: point) -> float:
         return Point.CalculateDistanceToOtherPoint(point(self.DownRightMostPoint.x, self.UpLeftMostPoint.y))
 
-    def CalculateDistFromleftMostPointToArbPoint(self, Point):
+    def CalculateDistFromleftMostPointToArbPoint(self, Point) -> float:
         return Point.CalculateDistanceToOtherPoint(self.UpLeftMostPoint)
 
-    def printName(self):
-        print(self.IcName)
+    def returnName(self) -> str:
+        return self.IcName
