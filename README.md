@@ -3,7 +3,7 @@
 This branch is dedicated to switching to using classes to define each point and each IC on the board.
 Using classes will give better control over the link between IC and the points that are connected to it. It also gives me the ability to save the IC/points info in a quicker and easier to work with format.
 
-**Global SITREP**: created `point.py` and `chip.py` which include the basic syntax.
+**Global SITREP**: created `PrintedCircutBoard.py`. Getting ready for merge.
 
 ---------------------------------------------------
 
