@@ -343,11 +343,20 @@ def calculateDistance(x1,y1,x2,y2):
     """
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
+"""
 def sortPointsByDistToRefPoint(refPoint, Points):
+    
+    This function sorts an array of points based on their distance to a reference point.
+    
+    return np.array(sorted(Points,key=lambda point:calculateDistance(refPoint[0],refPoint[1],*point)))
+"""
+
+def sortPointsByDistToRefPoint2(refPoint, Points):
     """
     This function sorts an array of points based on their distance to a reference point.
     """
-    return np.array(sorted(Points,key=lambda point:calculateDistance(refPoint[0],refPoint[1],*point)))
+    return sorted(Points,key=lambda point:calculateDistance(refPoint.x,refPoint.y,*[point.x,point.y]))
+
 
 def isThosePointsTheSame(x1: int, y1: int, x2: int, y2: int, rel_tol: float = 0.15, abs_tol: float = 10.0) -> bool :
     """

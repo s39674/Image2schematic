@@ -1,12 +1,10 @@
-# Image2schematic
+# Image2schematic - classes migration
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
 Welcome to my Repo! This is my notebook on trying to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
 
-I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
-
-**Global SITREP**: Currently Working on getting skidl_to_schematic ready for use. Also working on querying skidl IC's database.
+**Global SITREP**: created `PrintedCircutBoard.py`. Getting ready for merge.
 
 ---------------------------------------------------
 
@@ -83,6 +81,8 @@ What we can see are the x,y coordinates of the points, and the x,y coordinates o
 This is the baseline to building an entire schematic.
 
 If you encountered any issues during installation or testing of `Image2schematic`, OR if you have any suggestions, please post them in the issues tab.
+
+If you encountered any issues during Installation or testing of `Image2schematic`, please post them in the issues tab.
 
 ## Few topics i need help with:
 
