@@ -153,6 +153,7 @@ if ICS_Introduced:
         for point in EntireBoardPoints:
             # check x of point and x of right line of ic
             if(math.isclose(point[0], IcCord[2], rel_tol=0.2, abs_tol=10)):
+                # checking y of point and y of edges of ic, ~20 pixel proximty
                 if( (IcCord[1] - 20) < point[1] and point[1] < (IcCord[3] + 20) ):
                     ClosePinPoints = np.append(ClosePinPoints, [[int(point[0]), int(point[1])]], axis=0)
                 else: print("Failed y - right")
@@ -182,6 +183,7 @@ if ICS_Introduced:
 
         CurrentIC = list(filter(bool, [str.strip() for str in (str(show(IcName[0],IcName[1]))).splitlines()]))
         print(CurrentIC)
+        
         if Write_Enable and IC_detectTest:
             with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
                 filedata = file.read()
