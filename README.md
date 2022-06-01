@@ -1,10 +1,12 @@
-# Image2schematic - classes migration
+# Image2schematic
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
 Welcome to my Repo! This is my notebook on trying to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
 
-**Global SITREP**: created `PrintedCircutBoard.py`. Getting ready for merge.
+I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
+
+**Global SITREP**: Finished working on classes migration.
 
 ---------------------------------------------------
 
