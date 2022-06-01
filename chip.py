@@ -27,6 +27,7 @@ class chip:
             self.pins = pins
             # looping over recived pins to set the ConnectedToIC variable
             for point in pins: point.ConnectedToChip = self
+        else: self.pins = [] # => avoids "shared memory"
 
         if IcName: self.IcName = IcName
         if IcDescription: self.IcDescription = IcDescription

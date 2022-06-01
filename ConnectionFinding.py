@@ -32,13 +32,7 @@ ICS_Introduced = True
 IC_detectTest = True
 # If above is true, please provide the name of the IC that works with skidl search function,
 # IC identification is a future feature,
-# TODO: add t
 IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
-
-# stores chips corrds for later use- associting each pin with its corrsponding x,y cords
-IcCords = np.array([[1, 2, 3, 4]])        # dummy array intsilation
-IcCords = np.delete(IcCords, 0, axis=0)    # clearing the array for inputs
-print(IcCords)
 
 img = cv2.imread(
     'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
@@ -56,20 +50,15 @@ if Debugging_Enable:
 def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     '''
     This function detects an ICs silk traces (where an ICs should be placed) and hides it, that
-    needed for a better trace finding. This function also populates IcCords for future analysis.
-    input: An image that the function should find the ics silk traces inside
-    output: An image with those Silk traces removed
+    needed for a better trace finding. This function also populates the pcb chips array for future analysis.
+    @img An image that the function should find the ics silk traces inside
+    return: An image with those Silk traces removed
     '''
-    # making the IcCords a global so i modify it and the modifcation will stay after the function
-    # TODO: make the function return this
-    global IcCords
     IcsDetected = img.copy()
     
     # a variable that stores the bgr color value of the board. Its used for hiding the silk trace with a rectangle whose color is this variable
     # this assusmes the most used color is the color of the board!
     BoardColor = GetDominotColor(img)
-    
-    
     
     
     # setting lower and upper limit of the color, should be white for silk traces
@@ -96,7 +85,6 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             (x, y, w, h) = cv2.boundingRect(approx)
             
             print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
-            IcCords = np.append(IcCords, [[int(x), int(y), int(x+w),int(y+h)]], axis=0)
 
             MyPCB.addChip( chip( point(int(x), int(y)), point(int(x+w),int(y+h)), IcName[0], IcName[1] , ConnectedToPCB=MyPCB))
             
@@ -118,6 +106,7 @@ except OSError as e:
 
 EBP_String, EntireBoardPoints = GetPointsFromFile(EntireBoardPointsFile)
 
+# Adding points to MyPCB points array
 for EBP in EntireBoardPoints:
     MyPCB.addPoint(point(EBP[0],EBP[1]))
 
@@ -129,15 +118,6 @@ if ICS_Introduced:
     img = DetectICsSilk(img)
     cv2.imshow('Ics removed', img)
     cv2.waitKey(0)
-    
-    print("Ics at:", IcCords)
-
-    """
-    ClosePinPoints = np.array([[1, 2], [3, 4]])        # dummy array intsilation
-    ClosePinPoints = np.delete(ClosePinPoints, [0, 1], axis=0)    # clearing the array for inputs
-    TempClosePinPoints = np.array([[1, 2], [3, 4]])
-    TempClosePinPoints = np.delete(TempClosePinPoints, [0, 1], axis=0)
-    """
 
     ClosePinPoints = []
     TempClosePinPoints = []
@@ -237,6 +217,7 @@ if ICS_Introduced:
             with open(f"output//Files//PointsFileFor_{ImageName}.txt", 'w') as file:
                 file.write(filedata)
 
+
 cnts = GetContours(img)
 
 CroppingMaskV2 = np.zeros_like(img)
@@ -252,7 +233,7 @@ pts = np.delete(pts, [0, 1], axis=0)
 ContourBoxPoints = np.array([[1, 2], [3, 4]])        
 
 ContourBoxPoints = np.delete(ContourBoxPoints, [0, 1], axis=0)
-
+ContourBoxPoints2 = []
 
 starting_contour_number = 0
 
@@ -267,8 +248,6 @@ Counter2 = 1
 for c in cnts:
     
     Counter2 = 1
-    
-    
     
     approx = cv2.approxPolyDP(c, epsilon_value * cv2.arcLength(c, True), True)
     
@@ -357,45 +336,45 @@ for c in cnts:
         # According to this formula: X (EntireBoardPoint) = X (In ContourBox) + X (Where box starts), same with Y
         # X (where box starts) = x2
         # Y (where box starts) = y2
-
+        #print("ContourBoxPoints:\n")
         for Point in ContourBoxPoints:
-            Point[0] = Point[0] + (x2)
-            Point[1] = Point[1] + (y2)
-        
+            #print(Point)
+            ContourBoxPoints2.append(point(Point[0] + x2, Point[1] + y2))
+
         if Debugging_Enable:
-            print("ContourBoxPoints:\n", ContourBoxPoints)
-            print("EntireBoardPoints:\n", EntireBoardPoints)
+            print("ContourBoxPoints2:")
+            for POINT_1 in ContourBoxPoints2:
+                print(POINT_1.printInfo())
+            #print(f"ContourBoxPoints2: {[Point_1.printInfo() for Point_1 in ContourBoxPoints2]}")
+            print("EntireBoardPoints:")
+            for Point_2 in MyPCB.EntireBoardPoints:
+                print(Point_2.printInfo())
+            #print(f"{[Point_2.printInfo() for Point_2 in MyPCB.EntireBoardPoints]}")
+
         
-        
-        for Point1 in ContourBoxPoints:
+
+        # I dont think i need any of this if i just loop on point.ConnectedToPoints
+        for Point1 in ContourBoxPoints2:
             
             #Counter2 = 1
-            for Point2 in EntireBoardPoints:
+            for Point2 in MyPCB.EntireBoardPoints:
                 
                 if Debugging_Enable:
-                    print("COMPARING: ContourBoxPoints Point1: [{},{}]  EntireBoardPoints Point2: [{},{}]".format(
-                        Point1[0], Point1[1], Point2[0], Point2[1]))
+                    print(f"COMPARING: ContourBoxPoints Point1: [{Point1.x},{Point1.y}] ?= EntireBoardPoints Point2: [{Point2.x},{Point2.y}]")
                 
-                if isThosePointsTheSame(Point1[0], Point1[1], Point2[0],Point2[1], rel_tol=0.02, abs_tol=0.0):
-                        
-                    INDEX1 = EBP_String.find(
-                        "[{},{}]".format(Point2[0], Point2[1]))
+                # Checking if its the same point, very tiny margin, should be just 1px or 2px apart
+                if Point1.IsCloseToOtherPoint(Point2, rel_tol=0.02, abs_tol=0.0):
+                    # If it is actually the same point, Connect it to any other point in the same contour, which is every point in ContourBoxPoints2
+                    Point2.ConnectToPoints(MyPCB.ReturnPointsThatAreLike(ContourBoxPoints2, rel_tol=0.02, abs_tol=0.0))
                     
-                    INDEX1 = (EBP_String.find("]", INDEX1)) + 1
-                    
-                    # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
-                    try:
-                        EBP_String = EBP_String[:INDEX1] + \
-                            " connected to: ({},{})".format(
-                                ContourBoxPoints[Counter2][0], ContourBoxPoints[Counter2][1]) + EBP_String[INDEX1:]
+                    if Debugging_Enable:
+                        print(f"EQUAL! setting [{Point2.x},{Point2.y}] to connect to: {[Point.printInfo() for Point in MyPCB.ReturnPointsThatAreLike(ContourBoxPoints2, rel_tol=0.02, abs_tol=0.0)]} (The same point is checked and removed)")
+                        print(f"Connection set. Check:")
+                        [print(Point.printInfo()) for Point in Point2.ConnectedToPoints]
+                        #print(f"Does 'shared memory'?. Check: Point2.ConnectedToPoints[0].ConnectedToPoints:")
+                        #[print(Point.printInfo()) for Point in Point2.ConnectedToPoints[0].ConnectedToPoints]
 
-                        Counter2 = int(not Counter2)
-                        #print(EBP_String)
-                        break
-                    except IndexError:
-                        print("Error code 15: less than two points in contour.")
-
-                #print("No match.")
+                    break
 
         
         ###
@@ -407,10 +386,10 @@ for c in cnts:
         cv2.bitwise_not(bg, bg, mask=CroppingMask)
         dst2 = bg + dst
 
-        
+        # Clearing arrays for next run
         pts = np.delete(pts, np.s_[:], axis=0)
         ContourBoxPoints = np.delete(ContourBoxPoints, np.s_[:], axis=0)
-
+        ContourBoxPoints2 = []
         
         '''
         cv2.imwrite('output\croped.png', croped)
@@ -454,6 +433,38 @@ for c in cnts:
     #####
 
     contour_counter += 1
+
+print("NUM OF Contours: ", contour_counter)
+
+## CONSTRUCTING FINAL OUTPUT
+
+for Point in MyPCB.EntireBoardPoints:
+
+    
+    INDEX1 = EBP_String.find(
+        "[{},{}]".format(Point.x, Point.y))
+    
+    INDEX1 = (EBP_String.find("]", INDEX1)) + 1
+
+    AppendString = " Connected To:"
+    if len(Point.ConnectedToPoints) > 0:
+        for ConnectedPoint in Point.ConnectedToPoints:
+            AppendString = AppendString + f" | ({ConnectedPoint.x}, {ConnectedPoint.y})"
+
+        # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
+        try:
+            EBP_String = EBP_String[:INDEX1] + AppendString + EBP_String[INDEX1:]
+            #print(EBP_String)
+        except IndexError:
+            print("Error code 15: less than two points in contour.")
+
+
+print("FINAL OUTPUT:")
+print(EBP_String)
+
+
+## WRITING CONNECTION TO FILE
+
 if(Write_Enable):
     EntireBoardPointsFileWithConnection = open(
         "output//Files//PointsFileWithConnectionFor{}.txt".format(ImageName), "w")
@@ -461,15 +472,6 @@ if(Write_Enable):
     EntireBoardPointsFileWithConnection.close()
 
 
-print("NUM OF Contours: ", contour_counter)
-
-'''
-
-(y, x) = np.where(mask == 255)
-(topy, topx) = (np.min(y), np.min(x))
-(bottomy, bottomx) = (np.max(y), np.max(x))
-out = out[topy:bottomy+1, topx:bottomx+1]
-    '''
 
 cv2.imshow('mask', out)
 
