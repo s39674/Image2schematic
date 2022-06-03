@@ -84,13 +84,11 @@ This is the baseline to building an entire schematic.
 
 If you encountered any issues during installation or testing of `Image2schematic`, OR if you have any suggestions, please post them in the issues tab.
 
-If you encountered any issues during Installation or testing of `Image2schematic`, please post them in the issues tab.
-
 ## Few topics i need help with:
 
-- Building a class for each point and IC - please see the dedicated branch on this topic.
-- More than 2 point connection finding - right now I can't detect lines that connect 3 different components to each other.
+- More than 2 point connection finding - right now I can't detect lines that connect 3 different components at once.
 - Skidl_to_schematic algorithm - I can't get the algorithm that take skidl code and output a schematic to work.
+- Using yolo or other image classification algorithm to classify a component as either a capacitor, resistor etc.
 
 I want to thank you for reading this and i hope you can help me, thank you!
 
