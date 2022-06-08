@@ -1,0 +1,1 @@
+This folder is for storing the output of `detetingPoints.py` and `ConnectionFinding.py`, as well as the samples of how the output should look like.

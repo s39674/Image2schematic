@@ -1,0 +1,26 @@
+EntireBoardPoints program:
+
+Point: [435,479]
+Point: [435,466]
+Point: [435,453]
+Point: [435,439]
+Point: [435,426]
+Point: [436,412]
+Point: [779,498] connected to: (535,136)
+Point: [200,498] connected to: (443,136)
+Point: [780,484] connected to: (535,109)
+ATtiny841-SS | 6/PA7/BIDIRECTIONAL | [190,171]
+Point: [198,484] connected to: (443,109)
+Point: [534,243] connected to: (779,551)
+ATtiny841-SS | 5/PB2/BIDIRECTIONAL | [190,144]
+Point: [444,243] connected to: (199,551)
+Point: [534,216] connected to: (779,538)
+ATtiny841-SS | 4/~{RESET}/PB3/BIDIRECTIONAL | [190,117]
+Point: [444,216] connected to: (200,538) | (779,525)
+Point: [534,189] connected to: (779,525) | (200,538)
+Point: [444,189] connected to: (199,525)
+ATtiny841-SS | 3/XTAL2/PB1/BIDIRECTIONAL | [190,90]
+ATtiny841-SS | 2/XTAL1/PB0/BIDIRECTIONAL | [190,64]
+ATtiny841-SS | 1/VCC/POWER-IN | [190,37]
+74HC595 | 1/NC | [900,100] connected to: (267,235)
+74HC595 | 2/NC | [920,100] connected to: (267,285)

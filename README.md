@@ -6,7 +6,7 @@ Welcome to my Repo! This is my notebook on trying to extract PCB schematics from
 
 I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
 
-**Global SITREP**: Finished working on classes migration.
+**Global SITREP**: Currently working on IC text detection using EasyOCR: https://github.com/JaidedAI/EasyOCR
 
 ---------------------------------------------------
 
@@ -88,7 +88,6 @@ If you encountered any issues during Installation or testing of `Image2schematic
 
 ## Few topics i need help with:
 
-- Building a class for each point and IC - please see the dedicated branch on this topic.
 - More than 2 point connection finding - right now I can't detect lines that connect 3 different components to each other.
 - Skidl_to_schematic algorithm - I can't get the algorithm that take skidl code and output a schematic to work.
 
