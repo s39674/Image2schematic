@@ -41,7 +41,15 @@ $ pip install skidl
 $ pip install opencv-python
 ```
 
-**Note**: I recommand installing the full package of `OpenCV` as it gives some extra handy modules that might be used in the future. Read more here: https://pypi.org/project/opencv-python/
+**Note**: 
+`skidl` does require some part libraries from `KiCAD`, if you don't want to install `KiCAD` you can just install the part libraries from: https://gitlab.com/kicad/libraries/kicad-symbols then point the environment variable to it:
+```bash
+$ git clone https://gitlab.com/kicad/libraries/kicad-symbols
+# for windows:
+$ setx KICAD KICAD_SYMBOL_DIR="/path/to/kicad/symbols/"
+# for linux:
+$ export KICAD_SYMBOL_DIR="/path/to/kicad/symbols/"
+```
 
 After you cloned the repository, <ins>first run</ins> `detectingPoints.py`:
 
