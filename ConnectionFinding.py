@@ -18,6 +18,7 @@ from point import *
 from chip import *
 from PrintedCircutBoard import *
 
+
 MyPCB = PrintedCircutBoard()
 
 
@@ -446,10 +447,10 @@ for Point in MyPCB.EntireBoardPoints:
     
     INDEX1 = (EBP_String.find("]", INDEX1)) + 1
 
-    AppendString = " Connected To:"
+    AppendString = " connected to:"
     if len(Point.ConnectedToPoints) > 0:
         for ConnectedPoint in Point.ConnectedToPoints:
-            AppendString = AppendString + f" | ({ConnectedPoint.x}, {ConnectedPoint.y})"
+            AppendString = AppendString + f" ({ConnectedPoint.x}, {ConnectedPoint.y})"
 
         # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
         try:
@@ -462,6 +463,7 @@ for Point in MyPCB.EntireBoardPoints:
 print("FINAL OUTPUT:")
 print(EBP_String)
 
+EBP_String = formatize_EBP_string(EBP_String)
 
 ## WRITING CONNECTION TO FILE
 
