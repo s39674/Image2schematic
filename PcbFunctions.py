@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import sys
 import os
+import re
 
 
 
@@ -597,3 +598,37 @@ def create_blank(width, height, bgr_color=(0, 0, 0)):
     image[:] = bgr_color
 
     return image
+
+def formatize_EBP_string(EBP_String):
+  EBP_String = re.sub("[C|c]onnected [T|t]o", "connected to", EBP_String)
+  allIndices = []
+  allLinesLen = []
+  maxBreakPoint = 0
+  maxLineLen = 0
+  finalStr = ""
+
+  for line in EBP_String.split('\n'):
+    idx = line.find("connected to")
+    allIndices.append(idx)
+    if (idx < 0):
+      allLinesLen.append(len(line))
+  maxBreakPoint = max(allIndices)
+  maxLineLen = max(allLinesLen)
+  if (maxLineLen > maxBreakPoint):
+    maxBreakPoint = maxLineLen
+  for line in EBP_String.split('\n'):
+    breakPoint = line.find("connected to")
+    if (breakPoint < 0):
+      finalStr += line
+      finalStr += '\n'
+    else:
+      finalStr += line[0:breakPoint]
+      for i in range(breakPoint, maxBreakPoint+3):
+        finalStr += ' '
+      finalStr += "=>"
+      for i in range(0, 2):
+        finalStr += ' '
+      finalStr += line[breakPoint:]
+      finalStr += '\n'
+
+  return finalStr
