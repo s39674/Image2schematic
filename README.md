@@ -4,8 +4,6 @@
 
 This branch is dedicated for EasyOCR integration.
 
-I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
-
 **Global SITREP**: managed to get EasyOCR working with OpenCV. Added a few function to process input, WIP.
 
 ---------------------------------------------------
