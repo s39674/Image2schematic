@@ -6,7 +6,6 @@ this program finds connections between points.
 This program also associate every point with an IC that's connected to it.
 All the data then gets writen to a new points file.
 """
-
 import math
 import sys
 import cv2
@@ -34,6 +33,13 @@ IC_detectTest = True
 # IC identification is a future feature,
 IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
 
+if IC_detectTest:
+    import easyocr
+    reader = easyocr.Reader(['en'], gpu=True)
+    #result = ICimageToSkidl('74HC595.jpeg', reader)
+    #print(result)
+    #sys.exit(0)
+
 img = cv2.imread(
     'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
 if img is None:
@@ -60,25 +66,72 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     # this assusmes the most used color is the color of the board!
     BoardColor = GetDominotColor(img)
     
-    
+
+    """
+    # IC Detection
+    # TODO: IC color mask
+    # lower_val = np.array([0,0,0])
+    # upper_val = np.array([255,255,255])
+    # icMask = cv2.inRange(img, lower_val, upper_val)
+    # on IC Mask
+    # if detectTest, than try to find the name; else just put: "Unknowen IC"
+    # cnts = cv2.findContours(icMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    for c in cnts:
+        #print("looping over chips")
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+        #print("Approx: ", len(approx))
+        area = cv2.contourArea(c)
+        #print("Area: ", area)
+        
+        if len(approx) == 4 and area > Threshold_AreaMin and area < Threshold_AreaMax:
+            
+            (x, y, w, h) = cv2.boundingRect(approx)
+            
+            print("found chip at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
+
+            FoundChip = chip(point(int(x), int(y)), point(int(x+w),int(y+h)),"Unknown chip", "Unknown chip desc", ConnectedToPCB=MyPCB)
+            # should set chipAngle right here.
+            
+            if IC_detectTest:
+                # Passing the cropped image of the IC to extract text and pinout
+                ChipName, ChipDescription, angle = ICimageToSkidl(img[y:y+h, x:x+w], reader)
+                FoundChip.IcName = ChipName
+                FoundChip.IcDescription = ChipDescription
+                FoundChip.angle = angle
+            
+            MyPCB.addChip(FoundChip)
+
+            # show what ics got detected
+            cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            # hiding that silk trace with a rectangle whose color is the same as the entire board
+            cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
+                          (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
+        
+    """
+    # Silk screen mask
     # setting lower and upper limit of the color, should be white for silk traces
     lower_val = np.array([170, 170, 170])
     upper_val = np.array([255, 255, 255])
     # Threshold the bgr image to get only that range of colors
-    mask = cv2.inRange(img, lower_val, upper_val)
+    silkMask = cv2.inRange(img, lower_val, upper_val)
+
+    cnts = cv2.findContours(silkMask, cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+
 
     
-    cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL,
-                            cv2.CHAIN_APPROX_SIMPLE)
 
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     for c in cnts:
-        print("looping over contours")
+        #print("looping over contours")
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        print("Approx: ", len(approx))
+        #print("Approx: ", len(approx))
         area = cv2.contourArea(c)
-        print("Area: ", area)
+        #print("Area: ", area)
         
         if len(approx) == 4 and area > Threshold_AreaMin and area < Threshold_AreaMax:
             
@@ -86,6 +139,10 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             
             print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
 
+            if IC_detectTest:
+                # Passing the cropped image of the IC to extract text and pinout
+                ChipName, ChipDescription, angle = ICimageToSkidl(img[y:y+h, x:x+w], reader)
+            # should set chipAngle right here.
             MyPCB.addChip( chip( point(int(x), int(y)), point(int(x+w),int(y+h)), IcName[0], IcName[1] , ConnectedToPCB=MyPCB))
             
             # show what ics got detected
@@ -206,6 +263,7 @@ if ICS_Introduced:
                 #print(ClosePinPoint)
                 # the skidl ic query format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
                 # this takes care of it.
+                # TODO: catch index error
                 while f"/{i}/" not in CurrentICqueryResult[i]:
                     CurrentICqueryResult.append(CurrentICqueryResult.pop(i))
                                                                              # "ATtiny841-SS ():" => "ATtiny841-SS"; "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"

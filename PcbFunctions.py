@@ -3,8 +3,8 @@ import math
 import numpy as np
 import cv2
 import sys
-import os
-
+import io
+from skidl import search,show
 
 
 
@@ -242,7 +242,6 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
     @DesValue a value used to filter false positives
     @Debug_Enable show verbose printing and image processing
     @AlreadyFoundPoints optinal parameter to avoid getting points that are already detected
-    @IsRect - because this function flag circle point middle point as the left-up most point and rect point as sort middle point, need to diff between them 
     '''
     
 
@@ -374,7 +373,7 @@ def isThosePointsTheSame(x1: int, y1: int, x2: int, y2: int, rel_tol: float = 0.
     return False
 
 
-# IC info string functions
+# IC info functions
 
 def GetAmountOfPins(IcPinInfo):
     """
@@ -387,6 +386,72 @@ def GetAmountOfPins(IcPinInfo):
         if "Pin" in pin:
             i = i + 1
     return i
+
+
+def ICimageToSkidl(IC_image, reader, MinICchars: int = 4):
+    """
+    This function takes an image of an IC and anaylse it to extract the name and pinout from skidl search algorithm.
+    @IC_image image of an IC
+    @reader EasyOCR reader object
+    """
+    TextResults = reader.readtext(IC_image)
+    candidates = FilterResults(TextResults)
+
+
+    # loop over candidates, search every one with skidl search(); if there is a match just return that
+
+    # because skidl search function actually outputs to stdout, i have to redirect it
+    old_stdout = sys.stdout
+    new_stdout = io.StringIO()
+    sys.stdout = new_stdout
+    output = []
+    for candidate in candidates:
+        SearchResult = search(str(candidate[1]))
+        output.append(new_stdout.getvalue().strip())
+    # revert back
+    sys.stdout = old_stdout
+    print(output)
+    sys.exit(0)
+
+    if len(candidates) == 1:
+        IC_name = candidates[1]
+        # search it and fit into skidl format, return
+    else:
+
+        """
+    # if not, rotate and try again
+    h,w,_ = IC_image.shape
+
+    # if width > height that means we have a flipped 180 degree IC image (as we already tried 0 degree)
+    if w > h:
+        TextResults = reader.readtext(cv2.rotate(IC_image, cv2.ROTATE_180))
+
+    # if height > width that means we have either a 90 degree or -90 rotated image
+    if h > w:
+        TextResults = reader.readtext(cv2.rotate(IC_image, cv2.ROTATE_90_CLOCKWISE))
+        IC_name = FilterResults(TextResults)
+        
+        # check here, if not:
+
+        
+        TextResults = reader.readtext(cv2.rotate(IC_image, cv2.ROTATE_90_COUNTERCLOCKWISE))
+        FilterResults(TextResults)
+
+    # if after all of this nothing got captured, return the best result
+    """
+
+    # run the return through a function that will search skidl database and return the correct format
+    return ChipName, ChipDescription, angle
+
+
+def FilterResults(Results, MinICchars = 4, minThreshold = 0.5):
+    candidates = []
+    for Result in Results:
+        # First filter all with len < 4    => There is propaly no IC with that few chars
+        # Second filter out too low threshold scores
+        if len(Result[1]) > MinICchars and Result[2] > minThreshold:
+            candidates.append(Result)
+    return candidates
 
 ###############################################################################
 # All of those methods uses SIFT OR SUFT and dont work as of 13/12 in opencv-contrib 4.3.x
