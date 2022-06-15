@@ -14,9 +14,9 @@ class chip:
     
     ConnectedToPCB = None
     # The angle in which the chip is placed on the board
-    angle = None
+    ChipAngle = None
 
-    def __init__(self, UpLeftMostPoint = None, DownRightMostPoint = None, IcName = None, IcDescription = None, pins: list[point] = None, angle: int = None, ConnectedToPCB = None) -> None:
+    def __init__(self, UpLeftMostPoint: point = None, DownRightMostPoint: point = None, IcName: str = None, IcDescription: str = None, pins: list[point] = None, ChipAngle: int = None, ConnectedToPCB = None) -> None:
         #print(f"Chip init! Name: {IcName}")
         
         # NOTE: UpLeftMostPoint and DownRightMostPoint are not electrical points!
@@ -34,7 +34,7 @@ class chip:
         if IcName: self.IcName = IcName
         if IcDescription: self.IcDescription = IcDescription
 
-        if angle: self.angle = angle
+        if ChipAngle: self.ChipAngle = ChipAngle
 
         if ConnectedToPCB: self.ConnectedToPCB = ConnectedToPCB
 

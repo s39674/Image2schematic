@@ -388,15 +388,53 @@ def GetAmountOfPins(IcPinInfo):
     return i
 
 
-def ICimageToSkidl(IC_image, reader, MinICchars: int = 4):
+def ICimageToSkidl(IC_image, reader, MinICchars: int = 4, Debugging_Enable = False):
     """
     This function takes an image of an IC and anaylse it to extract the name and pinout from skidl search algorithm.
     @IC_image image of an IC
     @reader EasyOCR reader object
     """
+
     TextResults = reader.readtext(IC_image)
     candidates = FilterResults(TextResults)
+    chipAngle = 0
+    
+    if Debugging_Enable:
+        cv2.imshow("IC_image",IC_image)
+        print(f"TextResults: {TextResults}")
+        print(f"candidates: {candidates}")
+        cv2.waitKey(0)
+    
+    # for faster testing with Board11.png
+    #candidates = [([[22, 12], [120, 12], [120, 38], [22, 38]], '74HC595', 0.8238449835122339)]
+    
+    # if 0, then rotate 90 ccw
+    if len(candidates) == 0:
+        IC_image_ROT90ccw = cv2.rotate(IC_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        chipAngle = 90
 
+        TextResults = reader.readtext(IC_image_ROT90ccw)
+        candidates = FilterResults(TextResults)
+
+        if Debugging_Enable:
+            cv2.imshow("IC_image",IC_image_ROT90ccw)
+            print(f"TextResults: {TextResults}")
+            print(f"candidates: {candidates}")
+            cv2.waitKey(0)
+
+        # if still 0, rotate 180
+        if len(candidates) == 0:
+            IC_image_ROT180 = cv2.rotate(IC_image, cv2.ROTATE_180)
+            chipAngle = 180
+
+            if Debugging_Enable:
+                cv2.imshow("IC_image",IC_image_ROT180)
+                TextResults = reader.readtext(IC_image_ROT180)
+                candidates = FilterResults(TextResults)
+                print(f"TextResults: {TextResults}")
+                print(f"candidates: {candidates}")
+        
+            if len(candidates) == 0: return "Unknown IC name", "Unknown IC desc", None
 
     # loop over candidates, search every one with skidl search(); if there is a match just return that
 
@@ -407,41 +445,32 @@ def ICimageToSkidl(IC_image, reader, MinICchars: int = 4):
     output = []
     for candidate in candidates:
         SearchResult = search(str(candidate[1]))
-        output.append(new_stdout.getvalue().strip())
+        results = "".join(str(new_stdout.getvalue()).split()).split('...')
+
+        # reversing list to detect junk output faster
+        for result in reversed(results):
+            if "Searching" in result: break
+            else:
+                # example: '74xx.kicad_sym:74HC595()' => [1] = 74xx.kicad_sym [2] => 74HC595
+                output.append(result[:result.find(':')])
+                output.append(result[(result.find(':') + 1):-2])
+    
     # revert back
     sys.stdout = old_stdout
-    print(output)
-    sys.exit(0)
 
-    if len(candidates) == 1:
-        IC_name = candidates[1]
-        # search it and fit into skidl format, return
-    else:
-
-        """
-    # if not, rotate and try again
-    h,w,_ = IC_image.shape
-
-    # if width > height that means we have a flipped 180 degree IC image (as we already tried 0 degree)
-    if w > h:
-        TextResults = reader.readtext(cv2.rotate(IC_image, cv2.ROTATE_180))
-
-    # if height > width that means we have either a 90 degree or -90 rotated image
-    if h > w:
-        TextResults = reader.readtext(cv2.rotate(IC_image, cv2.ROTATE_90_CLOCKWISE))
-        IC_name = FilterResults(TextResults)
-        
-        # check here, if not:
-
-        
-        TextResults = reader.readtext(cv2.rotate(IC_image, cv2.ROTATE_90_COUNTERCLOCKWISE))
-        FilterResults(TextResults)
-
-    # if after all of this nothing got captured, return the best result
-    """
-
-    # run the return through a function that will search skidl database and return the correct format
-    return ChipName, ChipDescription, angle
+    if Debugging_Enable: print(output)
+    
+    # validating output
+    i = 0
+    while i < len(output):
+        show_Message = show(output[i], output[i+1])
+        if "ERROR" and "WARNING" not in show_Message:
+            print(f"Found IC: ICname: {output[i+1]} ICdesc: {output[i]}")
+            # return Chip name, Chip description, angle
+            return output[i+1], output[i], chipAngle
+        i += 2
+    
+    return "Unknown IC name", "Unknown IC desc", None
 
 
 def FilterResults(Results, MinICchars = 4, minThreshold = 0.5):

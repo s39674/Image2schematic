@@ -12,7 +12,7 @@ import cv2
 import os
 import numpy as np
 from PcbFunctions import *
-from skidl import search,show
+from skidl import show
 from point import *
 from chip import *
 from PrintedCircutBoard import *
@@ -20,7 +20,7 @@ from PrintedCircutBoard import *
 MyPCB = PrintedCircutBoard()
 
 
-# Please change this value according to your image name
+# Please change this value according to your image name; Please don't enter here a path, see comment below
 ImageName = "Board8.png"
 # Debug mode allows you to see the image processing more clearly
 Debugging_Enable = False
@@ -28,22 +28,20 @@ Debugging_Enable = False
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
 ICS_Introduced = True
+# Try to recognize Chip's pinouts
 IC_detectTest = True
-# If above is true, please provide the name of the IC that works with skidl search function,
-# IC identification is a future feature,
-IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
+
 
 if IC_detectTest:
     import easyocr
     reader = easyocr.Reader(['en'], gpu=True)
-    #result = ICimageToSkidl('74HC595.jpeg', reader)
-    #print(result)
-    #sys.exit(0)
 
+# Change path here according to your image location
 img = cv2.imread(
     'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
+
 if img is None:
-    sys.exit("Could not read the image.")
+    sys.exit("Could not read image. Please check file integrity/path.")
 
 """
 # for future use
@@ -67,15 +65,19 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     BoardColor = GetDominotColor(img)
     
 
-    """
-    # IC Detection
-    # TODO: IC color mask
-    # lower_val = np.array([0,0,0])
-    # upper_val = np.array([255,255,255])
-    # icMask = cv2.inRange(img, lower_val, upper_val)
+    #IC Detection
+    #TODO: IC color mask
+    lower_val = np.array([45,45,45])
+    upper_val = np.array([70,70,70])
+    icMask = cv2.inRange(img, lower_val, upper_val)
+    
+    if Debugging_Enable:
+        cv2.imshow('icMask', icMask)
+        cv2.waitKey(0)
+    
     # on IC Mask
-    # if detectTest, than try to find the name; else just put: "Unknowen IC"
-    # cnts = cv2.findContours(icMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # if IC_detectTest, than try to find the name; else just put: "Unknowen IC"
+    cnts = cv2.findContours(icMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     for c in cnts:
@@ -90,17 +92,17 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             
             (x, y, w, h) = cv2.boundingRect(approx)
             
-            print("found chip at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
+            if Debugging_Enable: print("potentially chip at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
 
             FoundChip = chip(point(int(x), int(y)), point(int(x+w),int(y+h)),"Unknown chip", "Unknown chip desc", ConnectedToPCB=MyPCB)
             # should set chipAngle right here.
             
             if IC_detectTest:
                 # Passing the cropped image of the IC to extract text and pinout
-                ChipName, ChipDescription, angle = ICimageToSkidl(img[y:y+h, x:x+w], reader)
+                ChipName, ChipDescription, ChipAngle = ICimageToSkidl(img[y:y+h, x:x+w], reader, Debugging_Enable)
                 FoundChip.IcName = ChipName
                 FoundChip.IcDescription = ChipDescription
-                FoundChip.angle = angle
+                FoundChip.ChipAngle = ChipAngle
             
             MyPCB.addChip(FoundChip)
 
@@ -121,8 +123,6 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     cnts = cv2.findContours(silkMask, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
 
-
-    
 
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     for c in cnts:
@@ -151,6 +151,7 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
                           (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
             
+    """
     return img
 
 
