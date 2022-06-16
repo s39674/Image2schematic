@@ -4,14 +4,13 @@
 
 This branch is dedicated for Using `requests` to fetch IC's information with HTTP request. This is a fix for: https://github.com/s39674/Image2schematic/issues/15
 
-**Global SITREP**: Created branch.
+**Global SITREP**: Created `TestingRequest.py`, successfully managed to query `www.octopart.com` search engine.
 
 ---------------------------------------------------
 
 ## Few topics i need help with:
 
-- Extracting necessary data from sites like https://octopart.com/ or 
-https://www.findchips.com/
+- Extracting necessary data from sites like https://www.findchips.com/ https://www.digikey.com/
 
 I want to thank you for reading this and i hope you can help me, thank you!
 
