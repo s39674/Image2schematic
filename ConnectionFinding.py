@@ -13,7 +13,7 @@ import cv2
 import os
 import numpy as np
 from PcbFunctions import *
-from skidl import search,show
+from skidl import show
 from point import *
 from chip import *
 from PrintedCircutBoard import *
@@ -32,7 +32,7 @@ Write_Enable = True
 ICS_Introduced = True
 IC_detectTest = True
 # If above is true, please provide the name of the IC that works with skidl search function,
-# IC identification is a future feature,
+# IC identification is a future feature, please see dedicated branch
 IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
 
 img = cv2.imread(
@@ -110,6 +110,7 @@ EBP_String, EntireBoardPoints = GetPointsFromFile(EntireBoardPointsFile)
 # Adding points to MyPCB points array
 for EBP in EntireBoardPoints:
     MyPCB.addPoint(point(EBP[0],EBP[1]))
+
 
 cv2.imshow('Original Image', img)
 cv2.waitKey(0)

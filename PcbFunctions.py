@@ -109,7 +109,7 @@ def PutOnTopBigBlack(image):
     cv2.destroyAllWindows()
     return l_img
 
-def DetectPointsV2(image, Debugging_Enabled = True):
+def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
     '''
     ## version 2 of DetectingCircles.\n
     This function takes an image and returns a numpy 3-diminisonal array contining all points.
@@ -125,15 +125,15 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.medianBlur(gray, 11)
-    # a varibale that display's how much points was found, if 1 then that means i didn't get the other one so resort to diffrent methods
-    Num_Points_Found = 0
-    # it also captures the rectangles points
+    # This also captures the rectangles points
     thresh = cv2.threshold(
         blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     if Debugging_Enabled:
         cv2.imshow('blur', blur)
         cv2.imshow('thresh', thresh)
 
+    # if this variable is too low, try to use other methods to detect points
+    Num_Points_Found = 0
     # dummy array intsilation
     BoardPointsArray = np.array([[1, 2], [3, 4]])
     # clearing the array for inputs
@@ -146,9 +146,9 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     for c in cnts:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        print("Approx: ", len(approx))
         area = cv2.contourArea(c)
-        print(area)
+        #print("Approx: ", len(approx))
+        #print(area)
         if len(approx) == 4 and area > 50 and area < 200:
             (x, y, w, h) = cv2.boundingRect(approx)
             #ar = w / float(h)
@@ -176,6 +176,7 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
+        # print("Approx: ", len(approx))
         # print(area)
         if len(approx) > 5 and area > 100 and area < 500000:
             ((x, y), r) = cv2.minEnclosingCircle(c)
@@ -183,45 +184,60 @@ def DetectPointsV2(image, Debugging_Enabled = True):
             BoardPointsArray = np.append(
                 BoardPointsArray, [[int(x), int(y)]], axis=0)
             Num_Points_Found += 1
+
     if Debugging_Enabled:
-        cv2.imshow('Both_Rec&Circs_DetectedByV2', copy)
+        cv2.imshow('Rec&Circs DetectedByV2 contours', copy)
         print("Num_Points_Found before image matching: ", Num_Points_Found)
         print(BoardPointsArray)
 
-    # if only found one point or less, try to find others using image matching
-    if Num_Points_Found < 2:
-        print("NOTE: on this run, I found less than two points -> trying to find others using image matching!")
+    # if we found only one point or less, try to find others using image matching
+    # OR if flag AlwaysUseTM is True, useful for making sure we got everything
+    if Num_Points_Found < 2 or AlwaysUseTM:
+        if not AlwaysUseTM: print("NOTE: on this run, I found less than two points -> trying to find others using image matching!")
         
         # Because were using image matching, we need to try each of our images of how the pcb points looks like
-        # return x,y,w,h of the image of the point inside the bigger image
+        # Template_matching returns x,y,w,h of the image of the point inside the contour
+        # It also returns an image with the found point removed so we could try to find other points
         for pointImage in pointImages:
-            FoundPoint = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
-            if FoundPoint:
 
+            FoundPoint = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+
+            while FoundPoint is not None:
+                
+                # -1,-1,-1,-1 code for duplicate, still need to remove it and retry
+                if FoundPoint[0:4] == [-1,-1,-1,-1]:
+                    ReturnedImage = FoundPoint[4]
+                    FoundPoint = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+                    continue
+
+                ReturnedImage = FoundPoint[4]
+                FoundPoint = FoundPoint[:4]
+
+                if Debugging_Enabled:
+                    print("found a point at: x1,y1: {},{}; x2,y2: {},{}".format(
+                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2],  FoundPoint[1]+FoundPoint[3]))
+                    cv2.imshow("ReturnedImage", ReturnedImage)
+                    cv2.waitKey(0)
+                
                 cv2.rectangle(copy, (FoundPoint[0], FoundPoint[1]), (FoundPoint[0] +
                                                         FoundPoint[2], FoundPoint[1]+FoundPoint[3]), (0, 0, 255), 2)
-                
-                if Debugging_Enabled: print("found a FoundPoint point at: x1,y1: {},{}; x2,y2: {},{}".format(
-                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2],  FoundPoint[1]+FoundPoint[3]))
-                
+
                 # entering the middle point of the FoundPoint - for best accuarcy
                 # [ [ w / 2 + x, h / 2 + y ] ]
                 BoardPointsArray = np.append(
                     BoardPointsArray, [[int((FoundPoint[2]/2)+FoundPoint[0]), int((FoundPoint[3]/2)+FoundPoint[1])]], axis=0)
-
+                
                 Num_Points_Found += 1
-            elif Debugging_Enabled: print("NOTE: Image matching returned None.")
-        
+            
+                #elif Debugging_Enabled: print("NOTE: Image matching returned None.")
+
+                FoundPoint = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+
+
 
         if Num_Points_Found < 2:
             print("Error - Image matching Cannot find all points :(")
 
-        if Num_Points_Found > 2:
-            print("Error: 3 or more points found.")
-            print(f"BoardPointsArray: {BoardPointsArray} ")
-        
-    else:
-        print("2 points found!")
 
     print("Num_Points_Found after image matching: ", Num_Points_Found)
     #cv2.imshow('thresh', thresh)
@@ -286,21 +302,24 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
     
     '''
 
-    if(Debug_Enable):
-        cv2.imshow("TMStartImg", img)
+    DominotColor = GetDominotColor(img)
+
+    #if(Debug_Enable):
+        #cv2.imshow("TMStartImg", img)
         #cv2.imshow("imgpoint", Img_Point)
 
     #result = cv2.matchTemplate(Img_Point, img, cv2.TM_SQDIFF_NORMED)
     result = cv2.matchTemplate(Img_Point, img, cv2.TM_CCOEFF_NORMED)
+    
     if(Debug_Enable):
         cv2.imshow('O_TM_Template', result)
 
     # We want the minimum squared difference
     (mn, maxVal, mnLoc, maxLoc) = cv2.minMaxLoc(result)
 
-    conf = result.max()
 
     if(Debug_Enable):
+        conf = result.max()
         print("maxVal: ", maxVal)
         print("conf: ", conf)
 
@@ -318,20 +337,24 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
         if AlreadyFoundPoints is not None:
             for Point in AlreadyFoundPoints:
                 if isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
-                    return None
+                    if Debug_Enable: print("Found Duplicate!")
+                    cv2.rectangle(img, (x, y), (x+w, y+h), (int(DominotColor[0]), int(DominotColor[1]), int(DominotColor[2])), -1)
+                    return [-1,-1,-1,-1,img]
 
+
+        cv2.rectangle(img, (x, y), (x+w, y+h), (int(DominotColor[0]), int(DominotColor[1]), int(DominotColor[2])), -1)
+        
         if Debug_Enable:
-            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
             print(f"Threshold meeted: boxInTemplateMatching: x1,y1: {x},{y}; x2,y2: {x+w},{y+h}")
             # Display the original image with the rectangle around the match.
             cv2.imshow('O_TM', img)
             # print(MatchingRectCordArray)
             cv2.waitKey(0)
-
-        return x, y, w, h
+        
+        return x, y, w, h, img
     else:
         if Debug_Enable:
-            print("Threshold not meeted")
+            print("Threshold not meeted!")
             # for threshold
             #cv2.waitKey(0)
         return None

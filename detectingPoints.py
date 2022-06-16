@@ -55,6 +55,7 @@ EntireBoardPoints = np.delete(EntireBoardPoints, [0, 1], axis=0)
 # SET BEFORE USE!
 ImageName = "Board8.png"
 write_to_file = True
+Debugging_Enable = True
 
 # Write all the points to a file for further analysis by ConnectionFinding.py
 if(write_to_file):
@@ -79,7 +80,7 @@ rows = gray.shape[0]  # 93.625
 original_img = img.copy()
 
 # detecting circles V2
-EntireBoardPoints, img = DetectPointsV2(img)
+EntireBoardPoints, img = DetectPointsV2(img, Debugging_Enable)
 
 print(EntireBoardPoints)
 cv2.imshow('original image', img)
