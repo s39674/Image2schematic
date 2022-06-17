@@ -2,11 +2,11 @@
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
-Welcome to my Repo! This is my notebook on trying to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
+**Image2schematic** is a Python program that aims to provide a reliabe tool for everyone to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
 
-I use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
+We use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
 
-**Global SITREP**: Currently working on IC text detection using EasyOCR: https://github.com/JaidedAI/EasyOCR
+**Global SITREP**: Currently working on IC text detection using EasyOCR: https://github.com/JaidedAI/EasyOCR, please see the dedicated branch on this topic.
 
 ---------------------------------------------------
 
@@ -19,17 +19,17 @@ There are multiple stages needed for this project:
     **SITREP**: currently no progress on that have been achived, any ideas would be greatly appreciated!
 
 
-2. Using `OpenCV`, we need to understand the pin to pin traces, and assign each pin with it's corrosponding x and y coordinates.
+2. Using `OpenCV`, we need to understand the pin to pin traces, and assign each point with it's corrosponding x and y coordinates.
 
     **SITREP**: Very far into it. `Board8.png` works very good.
 
-3. Using `OpenCV` OR `tesseract`, we need the understand the text on the ICs that are on the board, and then pass that into skidl search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
+3. Using OCR, we need the understand the text on the ICs that are on the board, and then pass that into `skidl` search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
 
-    **SITREP**: some what into it, we do know where there are ICs, as well as used skidl queries.
+    **SITREP**: For now, we use `EasyOCR` for extracting text, please see dedicated branch.
 
-4. Using all this data metioned above, and using skidl, we will make a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
+4. Using all this data metioned above, and using skidl, we will craft a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
 
-    **SITREP**: very close to outputing a test schematic using skidl syntax, a lot of discussion on `skidl` repo.
+    **SITREP**: very close to outputing a test schematic using skidl syntax.
 
 
 ## Testing
@@ -37,12 +37,12 @@ There are multiple stages needed for this project:
 Make sure you have `skidl` and `OpenCV` installed:
 
 ```bash
-$ pip install skidl
 $ pip install opencv-python
+$ pip install skidl
 ```
 
 **Note**: 
-`skidl` does require some part libraries from `KiCAD`, if you don't want to install `KiCAD` you can just install the part libraries from: https://gitlab.com/kicad/libraries/kicad-symbols then point the environment variable to it:
+`skidl` does require some part libraries from `KiCAD`. IF you don't want to install `KiCAD` you can just install the part libraries from: https://gitlab.com/kicad/libraries/kicad-symbols then point the environment variable to it:
 ```bash
 $ git clone https://gitlab.com/kicad/libraries/kicad-symbols
 # for windows:
@@ -57,9 +57,9 @@ After you cloned the repository, <ins>first run</ins> `detectingPoints.py`:
 $ python3 detectingPoints.py
 ```
 
-now you should have `PointsFileFor_Board8.png.txt` file under `output/Files`. This file should include all the coordinates (x,y) of the board electrical points.
+Now you should have `PointsFileFor_Board8.png.txt` file under `output/Files`. This file should include all the coordinates (x,y) of the board electrical points.
 
-Currently there are just two examples: `Board8.png` and `Board9.png`, but feel free to try it on other board images and post your result in the `Discussions` tab.
+Currently there are only a few examples, located at: `assets/Example_images/Board_images/`, but feel free to try it on other board images and post your result in the `Discussions` tab.
 
 <p align="left"><img src="assets/Example_images/Board_images/Board8.png" alt="assets/Example_images/Board_images/Board8.png" width="400"/></p>
 

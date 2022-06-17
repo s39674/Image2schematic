@@ -21,6 +21,7 @@ def get_ordered_list(points, x, y):
    points.sort(key = lambda p: (p.x - x)**2 + (p.y - y)**2)
    return points
 
+# Points File functions
 def GetPointsFromFile(File):
     '''
     a function thats returning the file as a string and numpy array containing all the points
@@ -45,10 +46,10 @@ def GetPointsFromFile(File):
     end_bracket_index = 0
     while(end_bracket_index != len(EBP_String)):  # not really necessary
         start_bracket_index = EBP_String.find("[", end_bracket_index)
-        middle_index = EBP_String.find(",", end_bracket_index)
+        middle_index = EBP_String.find(",", start_bracket_index)
         # if not the +1 it would give the same position
         end_bracket_index = EBP_String.find("]", end_bracket_index+1)
-        # print("start_bracket_index: ", start_bracket_index, " middle_index: ",
+        #print("start_bracket_index: ", start_bracket_index, " middle_index: ",
         #      middle_index, " end_bracket_index: ", end_bracket_index)
         if (start_bracket_index == -1):  # if not found
             break
@@ -56,10 +57,49 @@ def GetPointsFromFile(File):
             EntireBoardPoints = np.append(
                 EntireBoardPoints, [[int(EBP_String[(start_bracket_index+1): (middle_index)]),
                                      int(EBP_String[(middle_index+1): (end_bracket_index)])]], axis=0)  # not sure why but this form works
-
     return EBP_String, EntireBoardPoints
 
+def formatize_EBP_string(EBP_String):
+    """
+    :param EBP_string entire Board points string, got from file
 
+    By @ObaidAshraf
+    """
+    EBP_String = re.sub("[C|c]onnected [T|t]o", "connected to", EBP_String)
+    allIndices = []
+    allLinesLen = []
+    maxBreakPoint = 0
+    maxLineLen = 0
+    finalStr = ""
+
+    for line in EBP_String.split('\n'):
+      idx = line.find("connected to")
+      allIndices.append(idx)
+      if (idx < 0):
+        allLinesLen.append(len(line))
+    maxBreakPoint = max(allIndices)
+    maxLineLen = max(allLinesLen)
+    if (maxLineLen > maxBreakPoint):
+      maxBreakPoint = maxLineLen
+    for line in EBP_String.split('\n'):
+      breakPoint = line.find("connected to")
+      if (breakPoint < 0):
+        finalStr += line
+        finalStr += '\n'
+      else:
+        finalStr += line[0:breakPoint]
+        for i in range(breakPoint, maxBreakPoint+3):
+          finalStr += ' '
+        finalStr += "=>"
+        for i in range(0, 2):
+          finalStr += ' '
+        finalStr += line[breakPoint:]
+        finalStr += '\n'
+
+    return finalStr
+
+
+# OpenCV functions
 def GetContours(img):
     '''
     One of the core functions of this whole algorithm.
@@ -621,37 +661,3 @@ def create_blank(width, height, bgr_color=(0, 0, 0)):
     image[:] = bgr_color
 
     return image
-
-def formatize_EBP_string(EBP_String):
-  EBP_String = re.sub("[C|c]onnected [T|t]o", "connected to", EBP_String)
-  allIndices = []
-  allLinesLen = []
-  maxBreakPoint = 0
-  maxLineLen = 0
-  finalStr = ""
-
-  for line in EBP_String.split('\n'):
-    idx = line.find("connected to")
-    allIndices.append(idx)
-    if (idx < 0):
-      allLinesLen.append(len(line))
-  maxBreakPoint = max(allIndices)
-  maxLineLen = max(allLinesLen)
-  if (maxLineLen > maxBreakPoint):
-    maxBreakPoint = maxLineLen
-  for line in EBP_String.split('\n'):
-    breakPoint = line.find("connected to")
-    if (breakPoint < 0):
-      finalStr += line
-      finalStr += '\n'
-    else:
-      finalStr += line[0:breakPoint]
-      for i in range(breakPoint, maxBreakPoint+3):
-        finalStr += ' '
-      finalStr += "=>"
-      for i in range(0, 2):
-        finalStr += ' '
-      finalStr += line[breakPoint:]
-      finalStr += '\n'
-
-  return finalStr

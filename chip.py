@@ -4,7 +4,7 @@ from point import *
 class chip:
     
     IcName = None
-    IcDescription = None
+    Iclibrary = None
     # an array to store all pointers to the pcb points that are connected to this ic
     pins = []
     # up left most cornor
@@ -14,7 +14,7 @@ class chip:
     
     ConnectedToPCB = None
 
-    def __init__(self, UpLeftMostPoint = None, DownRightMostPoint = None, IcName = None, IcDescription = None, pins: list[point] = None, ConnectedToPCB = None) -> None:
+    def __init__(self, UpLeftMostPoint = None, DownRightMostPoint = None, IcName = None, Iclibrary = None, pins: list[point] = None, ConnectedToPCB = None) -> None:
         #print(f"Chip init! Name: {IcName}")
         
         # NOTE: UpLeftMostPoint and DownRightMostPoint are not electrical points!
@@ -30,7 +30,7 @@ class chip:
         else: self.pins = [] # => avoids "shared memory"
 
         if IcName: self.IcName = IcName
-        if IcDescription: self.IcDescription = IcDescription
+        if Iclibrary: self.Iclibrary = Iclibrary
 
         if ConnectedToPCB: self.ConnectedToPCB = ConnectedToPCB
 

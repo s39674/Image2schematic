@@ -87,7 +87,7 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             
             print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
 
-            MyPCB.addChip( chip( point(int(x), int(y)), point(int(x+w),int(y+h)), IcName[0], IcName[1] , ConnectedToPCB=MyPCB))
+            MyPCB.addChip( chip( point(int(x), int(y)), point(int(x+w),int(y+h)), IcName[1], IcName[0] , ConnectedToPCB=MyPCB))
             
             # show what ics got detected
             cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -197,11 +197,11 @@ if ICS_Introduced:
         #    print(f"[{poi.x}, {poi.y}]")
 
 
-        CurrentICqueryResult = list(filter(bool, [str.strip() for str in (str(show(Chip.IcName,Chip.IcDescription))).splitlines()]))
+        CurrentICqueryResult = list(filter(bool, [str.strip() for str in (str(show(Chip.Iclibrary,Chip.IcName))).splitlines()]))
         #print(CurrentICqueryResult)
-        if Write_Enable and IC_detectTest:
-            with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
-                filedata = file.read()
+        if IC_detectTest:
+            #with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
+            #    filedata = file.read()
 
             i = 1
             for ClosePinPoint in ClosePinPoints:
@@ -210,14 +210,10 @@ if ICS_Introduced:
                 # this takes care of it.
                 while f"/{i}/" not in CurrentICqueryResult[i]:
                     CurrentICqueryResult.append(CurrentICqueryResult.pop(i))
-                                                                             # "ATtiny841-SS ():" => "ATtiny841-SS"; "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"
-                filedata = filedata.replace(f'Point: [{ClosePinPoint.x},{ClosePinPoint.y}]', f'{CurrentICqueryResult[0][:-4]} | {CurrentICqueryResult[i][9:]} | [{ClosePinPoint.x},{ClosePinPoint.y}]')
-
+                
+                # Removing some unwanted text: "Pin None/1/VCC/POWER-IN" => "1/VCC/POWER-IN"
+                ClosePinPoint.pinInfo = CurrentICqueryResult[i][9:]
                 i = i + 1
-
-            #print(filedata)
-            with open(f"output//Files//PointsFileFor_{ImageName}.txt", 'w') as file:
-                file.write(filedata)
 
 
 cnts = GetContours(img)
@@ -438,33 +434,37 @@ for c in cnts:
 
 print("NUM OF Contours: ", contour_counter)
 
+
 ## CONSTRUCTING FINAL OUTPUT
 
-for Point in MyPCB.EntireBoardPoints:
 
-    
-    INDEX1 = EBP_String.find(
-        "[{},{}]".format(Point.x, Point.y))
-    
-    INDEX1 = (EBP_String.find("]", INDEX1)) + 1
+for PCBpoint in MyPCB.EntireBoardPoints:
+    if Debugging_Enable: print(f"PCBpoint: {PCBpoint.x},{PCBpoint.y} ConnectedToChip: {PCBpoint.ConnectedToChip} pininfo: {PCBpoint.pinInfo}")
+    ChangeTo = f"Point: [{PCBpoint.x},{PCBpoint.y}]"
+    if PCBpoint.ConnectedToChip and PCBpoint.pinInfo:
+        ChangeTo = f'{PCBpoint.ConnectedToChip.IcName} | {PCBpoint.pinInfo} | [{PCBpoint.x},{PCBpoint.y}]'
+        print(f"ChangeTo: {ChangeTo}")
 
-    AppendString = " connected to:"
-    if len(Point.ConnectedToPoints) > 0:
-        for ConnectedPoint in Point.ConnectedToPoints:
-            AppendString = AppendString + f" ({ConnectedPoint.x}, {ConnectedPoint.y})"
+    ChangeTo += " connected to:"
+
+    if len(PCBpoint.ConnectedToPoints) > 0:
+        for ConnectedPoint in PCBpoint.ConnectedToPoints:
+            ChangeTo += f" ({ConnectedPoint.x},{ConnectedPoint.y})"
 
         # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
         try:
-            EBP_String = EBP_String[:INDEX1] + AppendString + EBP_String[INDEX1:]
+            EBP_String = EBP_String.replace(f'Point: [{PCBpoint.x},{PCBpoint.y}]', ChangeTo)
             #print(EBP_String)
         except IndexError:
-            print("Error code 15: less than two points in contour.")
+            print("[Error] less than two points in contour.")
+            continue
 
+
+EBP_String = formatize_EBP_string(EBP_String)
 
 print("FINAL OUTPUT:")
 print(EBP_String)
 
-EBP_String = formatize_EBP_string(EBP_String)
 
 ## WRITING CONNECTION TO FILE
 
