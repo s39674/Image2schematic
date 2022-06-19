@@ -18,6 +18,7 @@ from point import *
 from chip import *
 from PrintedCircutBoard import *
 
+print("~~~---STARTING - Detecting Points---~~~")
 
 MyPCB = PrintedCircutBoard()
 
@@ -124,8 +125,7 @@ if ICS_Introduced:
     ClosePinPoints = []
     TempClosePinPoints = []
 
-    ### BEFORE i write the connections (because i want to rewrite the file), i want to loop over EBP
-    ### and check (by seeing if the x or y (should be determined by the oriantion of the chip)
+    ### loop over EBP and check (by seeing if the x or y (should be determined by the oriantion of the chip)
     ### if it's close enough to the outer right or left line of the chip) to see if a prticular pin is an IC pin,
     ### if it is i want to replace the in in the points file with something like this: lm336 Pin[1] Vcc [x,y]
     ### and after the connection is found it should say this: 
@@ -193,15 +193,10 @@ if ICS_Introduced:
 
         # for a 4 sided IC, should be the same process just with the x and y inverted: x,y = y,x
 
-        #for poi in ClosePinPoints:
-        #    print(f"[{poi.x}, {poi.y}]")
-
 
         CurrentICqueryResult = list(filter(bool, [str.strip() for str in (str(show(Chip.Iclibrary,Chip.IcName))).splitlines()]))
         #print(CurrentICqueryResult)
         if IC_detectTest:
-            #with open("output//Files//PointsFileFor_{}.txt".format(ImageName), 'r') as file:
-            #    filedata = file.read()
 
             i = 1
             for ClosePinPoint in ClosePinPoints:
@@ -481,3 +476,4 @@ cv2.imshow('mask', out)
 cv2.imshow('Objects Detected', img)
 cv2.waitKey(0)
 
+print("~~~---FINISH---~~~")

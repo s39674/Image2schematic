@@ -187,8 +187,9 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
-        #print("Approx: ", len(approx))
-        #print(area)
+        if Debugging_Enabled:
+            print("Approx: ", len(approx))
+            print(area)
         if len(approx) == 4 and area > 50 and area < 200:
             (x, y, w, h) = cv2.boundingRect(approx)
             #ar = w / float(h)
@@ -216,8 +217,9 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
-        # print("Approx: ", len(approx))
-        # print(area)
+        if Debugging_Enabled:
+            print("Approx: ", len(approx))
+            print(area)
         if len(approx) > 5 and area > 100 and area < 500000:
             ((x, y), r) = cv2.minEnclosingCircle(c)
             cv2.circle(copy, (int(x), int(y)), int(r), (36, 255, 12), 2)
