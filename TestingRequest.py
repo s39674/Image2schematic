@@ -1,6 +1,9 @@
 
+from asyncore import read
 import requests
 import json
+from PyPDF2 import PdfReader
+import io
 
 ICname = "TC1427"
 
@@ -37,15 +40,29 @@ JSON_response = json.loads(response.text)
 
 #print(JSON_response)
 
+
+
 for result in JSON_response['data']['search']['results']:
     
     part = result['part']
     Descriptions = part['descriptions']
 
     part_description = part['descriptions'][0]['text']
-    for description in Descriptions: 
+    for description in Descriptions:
         if description['text'].find(part['mpn']) > 0:
             part_description = description['text']
             break
 
     print(f"part name: {part['mpn']}\nPart description: {part_description}\n best datasheet: {part['best_datasheet']['url']}\n")
+
+
+FirstBestDataSheetUrl = JSON_response['data']['search']['results'][0]['part']['best_datasheet']['url']
+
+User_input1 = input(f"Should I try to extract info from: {FirstBestDataSheetUrl} ? [y | n] ")
+if User_input1 == "y":
+    response = requests.get(FirstBestDataSheetUrl)
+    reader2 = PdfReader(io.BytesIO(response.content))
+    if len(reader2.pages) > 0:
+        for page in reader2.pages:
+            if "PIN FUNCTION TABLE" in page.extract_text():
+                print(page.extract_text())
