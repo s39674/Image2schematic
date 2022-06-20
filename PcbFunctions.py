@@ -427,10 +427,11 @@ def ICimageToSkidl(IC_image, reader, MinICchars: int = 4, Debugging_Enable = Fal
             IC_image_ROT180 = cv2.rotate(IC_image, cv2.ROTATE_180)
             chipAngle = 180
 
+            TextResults = reader.readtext(IC_image_ROT180)
+            candidates = FilterResults(TextResults)
+            
             if Debugging_Enable:
                 cv2.imshow("IC_image",IC_image_ROT180)
-                TextResults = reader.readtext(IC_image_ROT180)
-                candidates = FilterResults(TextResults)
                 print(f"TextResults: {TextResults}")
                 print(f"candidates: {candidates}")
         
