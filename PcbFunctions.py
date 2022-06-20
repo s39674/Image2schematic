@@ -1,12 +1,13 @@
-
+"""
+This file holds various functions to process data. 
+"""
 import math
 import numpy as np
 import cv2
 import sys
 import os
 import re
-
-
+import logging
 
 
 # images of points, used for image matching
@@ -16,6 +17,21 @@ CircPoint_img = cv2.imread(
     'assets/Example_images/Board_points/CircPoint.png', cv2.IMREAD_COLOR)
 
 pointImages = [RectPointRight_img, CircPoint_img]
+
+
+class CustomStreamHandler(logging.StreamHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.error_logs = []
+        self.warning_logs = []
+
+    def emit(self, record):
+        if record.levelno == logging.ERROR:
+            self.error_logs.append(record)
+        elif record.levelno == logging.WARNING:
+            self.warning_logs.append(record)
+        super().emit(record)
+
 
 def get_ordered_list(points, x, y):
    points.sort(key = lambda p: (p.x - x)**2 + (p.y - y)**2)
@@ -149,7 +165,7 @@ def PutOnTopBigBlack(image):
     cv2.destroyAllWindows()
     return l_img
 
-def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
+def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False, logger = None):
     '''
     ## version 2 of DetectingCircles.\n
     This function takes an image and returns a numpy 3-diminisonal array contining all points.
@@ -235,7 +251,7 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
     # if we found only one point or less, try to find others using image matching
     # OR if flag AlwaysUseTM is True, useful for making sure we got everything
     if Num_Points_Found < 2 or AlwaysUseTM:
-        if not AlwaysUseTM: print("NOTE: on this run, I found less than two points -> trying to find others using image matching!")
+        if not AlwaysUseTM: print("[ii] on this run, I found less than two points -> trying to find others using image matching!")
         
         # Because were using image matching, we need to try each of our images of how the pcb points looks like
         # Template_matching returns x,y,w,h of the image of the point inside the contour
@@ -257,7 +273,7 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
 
                 if Debugging_Enabled:
                     print("found a point at: x1,y1: {},{}; x2,y2: {},{}".format(
-                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2],  FoundPoint[1]+FoundPoint[3]))
+                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2], FoundPoint[1]+FoundPoint[3]))
                     cv2.imshow("ReturnedImage", ReturnedImage)
                     cv2.waitKey(0)
                 
@@ -277,11 +293,11 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False):
 
 
 
-        if Num_Points_Found < 2:
-            print("Error - Image matching Cannot find all points :(")
+        if Num_Points_Found < 2 and logger:
+            logger.warning("[WW] Image matching Cannot find all points.")
 
 
-    print("Num_Points_Found after image matching: ", Num_Points_Found)
+    if Debugging_Enabled: print("Num_Points_Found after image matching: ", Num_Points_Found)
     #cv2.imshow('thresh', thresh)
     #cv2.imshow('opening', opening)
     #cv2.imshow('CirclesDetectedByV2', image)
@@ -336,7 +352,6 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
     for pt in zip(*loc[::-1]):
         if(i > 3):
             break
-        print("!!!")
         cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
         MatchingRectCordArray = np.append(
             MatchingRectCordArray, [[pt[0], pt[1], pt[0] + w,  pt[1] + h]], axis=0)

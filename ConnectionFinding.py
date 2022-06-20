@@ -11,6 +11,7 @@ import math
 import sys
 import cv2
 import os
+import logging
 import numpy as np
 from PcbFunctions import *
 from skidl import show
@@ -18,10 +19,9 @@ from point import *
 from chip import *
 from PrintedCircutBoard import *
 
-print("~~~---STARTING - Detecting Points---~~~")
+print("~~~---STARTING - Detecting Connection---~~~")
 
 MyPCB = PrintedCircutBoard()
-
 
 # Please change this value according to your image name
 ImageName = "Board8.png"
@@ -36,8 +36,18 @@ IC_detectTest = True
 # IC identification is a future feature, please see dedicated branch
 IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
 
+logger = logging.getLogger()
+
+logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S')
+logger.setLevel(logging.INFO)
+
+handler = CustomStreamHandler()
+logger.addHandler(handler)
+
+
 img = cv2.imread(
-    'assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
+    f'assets/Example_images/Board_images/{ImageName}', cv2.IMREAD_COLOR)
 if img is None:
     sys.exit("Could not read the image.")
 
@@ -75,18 +85,18 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
 
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     for c in cnts:
-        print("looping over contours")
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        print("Approx: ", len(approx))
         area = cv2.contourArea(c)
-        print("Area: ", area)
+        #print("looping over contours")
+        #print("Approx: ", len(approx))
+        #print("Area: ", area)
         
         if len(approx) == 4 and area > Threshold_AreaMin and area < Threshold_AreaMax:
             
             (x, y, w, h) = cv2.boundingRect(approx)
             
-            print("found ic at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
+            logger.info(f"[ii] found IC at: {x},{y} to: {(x+w)},{(y+h)}")
 
             MyPCB.addChip( chip( point(int(x), int(y)), point(int(x+w),int(y+h)), IcName[1], IcName[0] , ConnectedToPCB=MyPCB))
             
@@ -95,23 +105,23 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             # hiding that silk trace with a rectangle whose color is the same as the entire board
             cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
                           (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
-            
+        
+        else: logger.info(f"[ii] please note, a contour didn't match Threshold range. Contour Approx: {len(approx)} ; Area: {area}")
     return img
 
 
-# get the EntireBoardPoints from the file
+
 try:
+    # get the EntireBoardPoints from the file
     EntireBoardPointsFile = open(
-        "output/Files/PointsFileFor_{}.txt".format(ImageName), "r")
-except OSError as e:
-    sys.exit("Could not open the EBP points file. error: ", e)
+        f"output/Files/PointsFileFor_{ImageName}.txt", "r")
+    EBP_String, EntireBoardPoints = GetPointsFromFile(EntireBoardPointsFile)
+    # Adding points to MyPCB points array
+    for EBP in EntireBoardPoints:
+        MyPCB.addPoint(point(EBP[0],EBP[1]))
 
-EBP_String, EntireBoardPoints = GetPointsFromFile(EntireBoardPointsFile)
-
-# Adding points to MyPCB points array
-for EBP in EntireBoardPoints:
-    MyPCB.addPoint(point(EBP[0],EBP[1]))
-
+except:
+    logger.error(f"[EE] Could not load the EBP points file. Please check file path: output/Files/PointsFileFor_{ImageName}")
 
 cv2.imshow('Original Image', img)
 cv2.waitKey(0)
@@ -142,15 +152,10 @@ if ICS_Introduced:
     #### For future: i don't even need to calculate the distance as it already sort them i just need to reverse it.
 
     for Chip in MyPCB.chips:
-        Chip.printInfo()
-        print(f"right line x of Ic: {Chip.DownRightMostPoint.x}")
-
-        #RightMostPointOfIc = [Chip[2],Chip[1]]
-        #RightMostPointOfIc = [Chip.DownRightMostPoint.x, Chip.UpLeftMostPoint.y]
+        logger.info(f"[ii] Proccesing chip:")
+        Chip.printInfo(0)
+        
         RightMostPointOfIc = point(Chip.DownRightMostPoint.x, Chip.UpLeftMostPoint.y)
-
-        #LeftMostPointOfIC = [Chip[0],Chip[1]]
-        #LeftMostPointOfIC = [Chip.UpLeftMostPoint.x, Chip.UpLeftMostPoint.y]
         LeftMostPointOfIC = Chip.UpLeftMostPoint
 
         # Looping on NC points to save time; for the First IC there is no benefit
@@ -163,8 +168,8 @@ if ICS_Introduced:
                     # If the point is actually close to where i suspect an IC points will be:
                     #ClosePinPoints = np.append(ClosePinPoints, [[int(NCpoint.x), int(NCpoint.y)]], axis=0)
                     ClosePinPoints.append(NCpoint)
-                elif Debugging_Enable: print("Failed y - right")
-            elif Debugging_Enable: print("Failed x - right")
+                elif Debugging_Enable: logger.info("[ii] Failed y - right")
+            elif Debugging_Enable: logger.info("[ii] Failed x - right")
 
         # TODO: Finally fixed this algorithm to work with the classes, can now just set the IC pins at the end
         ClosePinPoints = sortPointsByDistToRefPoint2(RightMostPointOfIc, ClosePinPoints)
@@ -176,8 +181,8 @@ if ICS_Introduced:
                 if( (Chip.UpLeftMostPoint.y - 20) < NCpoint.y and NCpoint.y < (Chip.DownRightMostPoint.y + 20) ):
                     #TempClosePinPoints = np.append(TempClosePinPoints, [[int(NCpoint.x), int(NCpoint.y)]], axis=0)
                     TempClosePinPoints.append(NCpoint)
-                elif Debugging_Enable: print("Failed y - left")
-            elif Debugging_Enable: print("Failed x - left")
+                elif Debugging_Enable: logger.info("[ii] Failed y - left")
+            elif Debugging_Enable: logger.info("[ii] Failed x - left")
         
         # Now i got the right side points in ClosePinPoints, and left side in TempClosePinPoints, because i want all
         # of the right points to appear first, i concatenate it
@@ -266,13 +271,11 @@ for c in cnts:
         rect = cv2.boundingRect(pts)
         
         x2, y2, w, h = rect
-        print("x2 :", x2, " y2: ", y2)
+        #print("x2 :", x2, " y2: ", y2)
         
         croped = img[y2:y2+h, x2:x2+w].copy()
         
         pts = pts - pts.min(axis=0)
-
-        #print(croped.shape[:2])
         
         CroppingMask = np.zeros(croped.shape[:2], np.uint8)
         #CroppingMask = np.full_like(croped, (255, 0, 0))
@@ -320,10 +323,10 @@ for c in cnts:
         ContourBox = dst.copy()
 
 
-        if Debugging_Enable: print("############\nCONTOUR NUMBER: {}\n############".format(contour_counter))
+        if Debugging_Enable: logger.info(f"[ii] ############\nCONTOUR NUMBER: {contour_counter}\n############")
 
         
-        ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox, Debugging_Enable)
+        ContourBoxPoints, ContourBox = DetectPointsV2(ContourBox, Debugging_Enable, logger)
         
         # After i got all the board points which are inside the Contour box, i need to pair those with EntireBoardPoint
         # According to this formula: X (EntireBoardPoint) = X (In ContourBox) + X (Where box starts), same with Y
@@ -427,7 +430,7 @@ for c in cnts:
 
     contour_counter += 1
 
-print("NUM OF Contours: ", contour_counter)
+#print("NUM OF Contours: ", contour_counter)
 
 
 ## CONSTRUCTING FINAL OUTPUT
@@ -438,7 +441,7 @@ for PCBpoint in MyPCB.EntireBoardPoints:
     ChangeTo = f"Point: [{PCBpoint.x},{PCBpoint.y}]"
     if PCBpoint.ConnectedToChip and PCBpoint.pinInfo:
         ChangeTo = f'{PCBpoint.ConnectedToChip.IcName} | {PCBpoint.pinInfo} | [{PCBpoint.x},{PCBpoint.y}]'
-        print(f"ChangeTo: {ChangeTo}")
+        #print(f"ChangeTo: {ChangeTo}")
 
     ChangeTo += " connected to:"
 
@@ -447,13 +450,9 @@ for PCBpoint in MyPCB.EntireBoardPoints:
             ChangeTo += f" ({ConnectedPoint.x},{ConnectedPoint.y})"
 
         # https://stackoverflow.com/questions/5254445/how-to-add-a-string-in-a-certain-position
-        try:
-            EBP_String = EBP_String.replace(f'Point: [{PCBpoint.x},{PCBpoint.y}]', ChangeTo)
-            #print(EBP_String)
-        except IndexError:
-            print("[Error] less than two points in contour.")
-            continue
-
+        
+        EBP_String = EBP_String.replace(f'Point: [{PCBpoint.x},{PCBpoint.y}]', ChangeTo)
+        #print(EBP_String)
 
 EBP_String = formatize_EBP_string(EBP_String)
 
@@ -474,6 +473,10 @@ if(Write_Enable):
 cv2.imshow('mask', out)
 
 cv2.imshow('Objects Detected', img)
-cv2.waitKey(0)
 
-print("~~~---FINISH---~~~")
+print("~~~---FINISH; Logger Status Report:---~~~")
+print(f"Errors: {handler.error_logs}")
+print(f"Warnings: {handler.warning_logs}")
+print(f"NUM of warnings: {len(handler.error_logs)}; NUM of warnings: {len(handler.warning_logs)} ")
+
+cv2.waitKey(0)

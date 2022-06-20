@@ -48,8 +48,9 @@ class chip:
             if PIN.ConnectedToPCB is not None:
                 PIN.ConnectedToPCB = self.ConnectedToPCB
 
-    def printInfo(self) -> None:
+    def printInfo(self, verbose = 0) -> None:
         print(f"Chip name: {self.IcName}")
-        print("Pins:")
-        for pin in self.pins:
-            print(f"[{pin.x}, {pin.y}]")
+        if verbose > 0:
+            print("Pins:")
+            for pin in self.pins:
+                print(f"[{pin.x}, {pin.y}]")
