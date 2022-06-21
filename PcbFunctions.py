@@ -8,7 +8,6 @@ import sys
 import os
 import re
 import logging
-import ast
 
 
 # images of points, used for image matching
@@ -65,7 +64,7 @@ def GetPointsFromFile(File):
     #adds all points to numpy array
     if points:
         for i in range(len(points)):
-            EntireBoardPoints = np.append(EntireBoardPoints, [ast.literal_eval(points[i])], axis=0)
+            EntireBoardPoints = np.append(EntireBoardPoints, [np.fromstring(points[i][1:-1], dtype=int, sep=',')], axis=0)
 
     return EBP_String, EntireBoardPoints
 
