@@ -5,6 +5,7 @@ import cv2
 import sys
 import os
 import re
+from point import *
 
 
 
@@ -45,7 +46,7 @@ def GetPointsFromFile(File):
     end_bracket_index = 0
     while(end_bracket_index != len(EBP_String)):  # not really necessary
         start_bracket_index = EBP_String.find("[", end_bracket_index)
-        middle_index = EBP_String.find(",", end_bracket_index)
+        middle_index = EBP_String.find(",", start_bracket_index)
         # if not the +1 it would give the same position
         end_bracket_index = EBP_String.find("]", end_bracket_index+1)
         # print("start_bracket_index: ", start_bracket_index, " middle_index: ",
@@ -134,10 +135,14 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         cv2.imshow('blur', blur)
         cv2.imshow('thresh', thresh)
 
+    """
     # dummy array intsilation
     BoardPointsArray = np.array([[1, 2], [3, 4]])
     # clearing the array for inputs
     BoardPointsArray = np.delete(BoardPointsArray, [0, 1], axis=0)
+    """
+
+    BoardPointsArray = []
 
     # finding rectangles
     cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
@@ -146,16 +151,18 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     for c in cnts:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        print("Approx: ", len(approx))
         area = cv2.contourArea(c)
+        print("Approx: ", len(approx))
         print(area)
         if len(approx) == 4 and area > 50 and area < 200:
             (x, y, w, h) = cv2.boundingRect(approx)
             #ar = w / float(h)
             #cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
             cv2.rectangle(copy, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            BoardPointsArray = np.append(
-                BoardPointsArray, [[int(((w)/2) + x), int(((h)/2) + y)]], axis=0)
+
+            BoardPointsArray.append(point(int(x + (w/2)), int(y + (h/2))))
+            #BoardPointsArray = np.append(
+            #    BoardPointsArray, [[int(((w)/2) + x), int(((h)/2) + y)]], axis=0)
             Num_Points_Found += 1
 
     #cv2.imshow('RectanglesDetectedByV2', copy)
@@ -180,13 +187,14 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         if len(approx) > 5 and area > 100 and area < 500000:
             ((x, y), r) = cv2.minEnclosingCircle(c)
             cv2.circle(copy, (int(x), int(y)), int(r), (36, 255, 12), 2)
-            BoardPointsArray = np.append(
-                BoardPointsArray, [[int(x), int(y)]], axis=0)
+
+            BoardPointsArray.append(point(int(x), int(y)))
+            #BoardPointsArray = np.append(
+            #    BoardPointsArray, [[int(x), int(y)]], axis=0)
             Num_Points_Found += 1
     if Debugging_Enabled:
         cv2.imshow('Both_Rec&Circs_DetectedByV2', copy)
         print("Num_Points_Found before image matching: ", Num_Points_Found)
-        print(BoardPointsArray)
 
     # if only found one point or less, try to find others using image matching
     if Num_Points_Found < 2:
@@ -195,21 +203,23 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         # Because were using image matching, we need to try each of our images of how the pcb points looks like
         # return x,y,w,h of the image of the point inside the bigger image
         for pointImage in pointImages:
-            FoundPoint = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
-            if FoundPoint:
-
-                cv2.rectangle(copy, (FoundPoint[0], FoundPoint[1]), (FoundPoint[0] +
-                                                        FoundPoint[2], FoundPoint[1]+FoundPoint[3]), (0, 0, 255), 2)
+            foundMatch = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+            
+            if foundMatch:
+                cv2.rectangle(copy, (foundMatch[0], foundMatch[1]), (foundMatch[0] +
+                                                        foundMatch[2], foundMatch[1]+foundMatch[3]), (0, 0, 255), 2)
                 
-                if Debugging_Enabled: print("found a FoundPoint point at: x1,y1: {},{}; x2,y2: {},{}".format(
-                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2],  FoundPoint[1]+FoundPoint[3]))
+                if Debugging_Enabled: print("found a foundMatch point at: x1,y1: {},{}; x2,y2: {},{}".format(
+                    foundMatch[0], foundMatch[1], foundMatch[0] + foundMatch[2],  foundMatch[1]+foundMatch[3]))
                 
-                # entering the middle point of the FoundPoint - for best accuarcy
+                # entering the middle point of the foundMatch - for best accuarcy
                 # [ [ w / 2 + x, h / 2 + y ] ]
-                BoardPointsArray = np.append(
-                    BoardPointsArray, [[int((FoundPoint[2]/2)+FoundPoint[0]), int((FoundPoint[3]/2)+FoundPoint[1])]], axis=0)
-
+                #BoardPointsArray = np.append(
+                #    BoardPointsArray, [[int((foundMatch[2]/2)+foundMatch[0]), int((foundMatch[3]/2)+foundMatch[1])]], axis=0)
+                
+                BoardPointsArray.append(point(foundMatch[0] + (foundMatch[2]/2), foundMatch[1] + (foundMatch[3]/2)) )
                 Num_Points_Found += 1
+
             elif Debugging_Enabled: print("NOTE: Image matching returned None.")
         
 
@@ -218,7 +228,8 @@ def DetectPointsV2(image, Debugging_Enabled = True):
 
         if Num_Points_Found > 2:
             print("Error: 3 or more points found.")
-            print(f"BoardPointsArray: {BoardPointsArray} ")
+            print(f"BoardPointsArray:")
+            [print(f"({BoardPoint.x}, {BoardPoint.y})") for BoardPoint in BoardPointsArray]
         
     else:
         print("2 points found!")
@@ -317,7 +328,10 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
         # as we got an area, just take the middle point and compare that.
         if AlreadyFoundPoints is not None:
             for Point in AlreadyFoundPoints:
-                if isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
+                if isinstance(Point, point):
+                    if Point.IsCloseToOtherPoint(point(int(x+ w/2), int(y+h/2))):
+                        return None
+                elif isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
                     return None
 
         if Debug_Enable:

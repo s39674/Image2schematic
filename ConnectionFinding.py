@@ -340,7 +340,7 @@ for c in cnts:
         #print("ContourBoxPoints:\n")
         for Point in ContourBoxPoints:
             #print(Point)
-            ContourBoxPoints2.append(point(Point[0] + x2, Point[1] + y2))
+            ContourBoxPoints2.append(point(Point.x + x2, Point.y + y2))
 
         if Debugging_Enable:
             print("ContourBoxPoints2:")

@@ -66,10 +66,6 @@ if(write_to_file):
         sys.exit("Could not open directory to output the Points file to. error: ", e)
 
 
-
-
-# cv2.namedWindow("output", cv2.WINDOW_FREERATIO)
-
 img = cv2.imread('assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
 if img is None:
     sys.exit("Could not read the image.")
@@ -81,13 +77,13 @@ original_img = img.copy()
 # detecting circles V2
 EntireBoardPoints, img = DetectPointsV2(img)
 
-print(EntireBoardPoints)
+print(f"EntireBoardPoints:\n{EntireBoardPoints}")
 cv2.imshow('original image', img)
 
 # write to a file all the points x,y
 if(write_to_file):
-    for PoInt in EntireBoardPoints:
-        POINTS_FILE.write("\nPoint: [{},{}]".format(PoInt[0], PoInt[1]))
+    for PCBpoint in EntireBoardPoints:
+        POINTS_FILE.write(f"\nPoint: [{PCBpoint.x},{PCBpoint.y}]")
 
     POINTS_FILE.close()
 
