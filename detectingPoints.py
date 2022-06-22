@@ -101,13 +101,14 @@ original_img = img.copy()
 # detecting circles V2
 EntireBoardPoints, img = DetectPointsV2(img, Debugging_Enable)
 
-print(EntireBoardPoints)
+print("EntireBoardPoints:")
+[print(f"({BoardPoint.x}, {BoardPoint.y})") for BoardPoint in EntireBoardPoints]
 cv2.imshow('original image', img)
 
 # write to a file all the points x,y
 if(write_to_file):
-    for PoInt in EntireBoardPoints:
-        POINTS_FILE.write("\nPoint: [{},{}]".format(PoInt[0], PoInt[1]))
+    for PCBpoint in EntireBoardPoints:
+        POINTS_FILE.write(f"\nPoint: [{PCBpoint.x},{PCBpoint.y}]")
 
     POINTS_FILE.close()
 

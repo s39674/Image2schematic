@@ -166,7 +166,6 @@ if ICS_Introduced:
                 # TODO: generalize those values
                 if( (Chip.UpLeftMostPoint.y - 20) < NCpoint.y and NCpoint.y < (Chip.DownRightMostPoint.y + 20) ):
                     # If the point is actually close to where i suspect an IC points will be:
-                    #ClosePinPoints = np.append(ClosePinPoints, [[int(NCpoint.x), int(NCpoint.y)]], axis=0)
                     ClosePinPoints.append(NCpoint)
                 elif Debugging_Enable: logger.info("[ii] Failed y - right")
             elif Debugging_Enable: logger.info("[ii] Failed x - right")
@@ -179,7 +178,6 @@ if ICS_Introduced:
             # check x of point vs x of left line of ic
             if(math.isclose(NCpoint.x, Chip.UpLeftMostPoint.x, rel_tol=0.2, abs_tol=10)):
                 if( (Chip.UpLeftMostPoint.y - 20) < NCpoint.y and NCpoint.y < (Chip.DownRightMostPoint.y + 20) ):
-                    #TempClosePinPoints = np.append(TempClosePinPoints, [[int(NCpoint.x), int(NCpoint.y)]], axis=0)
                     TempClosePinPoints.append(NCpoint)
                 elif Debugging_Enable: logger.info("[ii] Failed y - left")
             elif Debugging_Enable: logger.info("[ii] Failed x - left")
@@ -227,11 +225,6 @@ contour_counter = 0
 pts = np.array([[1, 2], [3, 4]])        
 pts = np.delete(pts, [0, 1], axis=0)    
 
-
-ContourBoxPoints = np.array([[1, 2], [3, 4]])        
-
-ContourBoxPoints = np.delete(ContourBoxPoints, [0, 1], axis=0)
-ContourBoxPoints2 = []
 
 starting_contour_number = 0
 
@@ -332,16 +325,14 @@ for c in cnts:
         # According to this formula: X (EntireBoardPoint) = X (In ContourBox) + X (Where box starts), same with Y
         # X (where box starts) = x2
         # Y (where box starts) = y2
-        #print("ContourBoxPoints:\n")
         for Point in ContourBoxPoints:
-            #print(Point)
-            ContourBoxPoints2.append(point(Point[0] + x2, Point[1] + y2))
+            Point.x += x2
+            Point.y += y2
 
         if Debugging_Enable:
-            print("ContourBoxPoints2:")
-            for POINT_1 in ContourBoxPoints2:
+            print("ContourBoxPoints:")
+            for POINT_1 in ContourBoxPoints:
                 print(POINT_1.printInfo())
-            #print(f"ContourBoxPoints2: {[Point_1.printInfo() for Point_1 in ContourBoxPoints2]}")
             print("EntireBoardPoints:")
             for Point_2 in MyPCB.EntireBoardPoints:
                 print(Point_2.printInfo())
@@ -350,7 +341,7 @@ for c in cnts:
         
 
         # I dont think i need any of this if i just loop on point.ConnectedToPoints
-        for Point1 in ContourBoxPoints2:
+        for Point1 in ContourBoxPoints:
             
             #Counter2 = 1
             for Point2 in MyPCB.EntireBoardPoints:
@@ -360,11 +351,11 @@ for c in cnts:
                 
                 # Checking if its the same point, very tiny margin, should be just 1px or 2px apart
                 if Point1.IsCloseToOtherPoint(Point2, rel_tol=0.02, abs_tol=0.0):
-                    # If it is actually the same point, Connect it to any other point in the same contour, which is every point in ContourBoxPoints2
-                    Point2.ConnectToPoints(MyPCB.ReturnPointsThatAreLike(ContourBoxPoints2, rel_tol=0.02, abs_tol=0.0))
+                    # If it is actually the same point, Connect it to any other point in the same contour, which is every point in ContourBoxPoints
+                    Point2.ConnectToPoints(MyPCB.ReturnPointsThatAreLike(ContourBoxPoints, rel_tol=0.02, abs_tol=0.0))
                     
                     if Debugging_Enable:
-                        print(f"EQUAL! setting [{Point2.x},{Point2.y}] to connect to: {[Point.printInfo() for Point in MyPCB.ReturnPointsThatAreLike(ContourBoxPoints2, rel_tol=0.02, abs_tol=0.0)]} (The same point is checked and removed)")
+                        print(f"EQUAL! setting [{Point2.x},{Point2.y}] to connect to: {[Point.printInfo() for Point in MyPCB.ReturnPointsThatAreLike(ContourBoxPoints, rel_tol=0.02, abs_tol=0.0)]} (The same point is checked and removed)")
                         print(f"Connection set. Check:")
                         [print(Point.printInfo()) for Point in Point2.ConnectedToPoints]
                         #print(f"Does 'shared memory'?. Check: Point2.ConnectedToPoints[0].ConnectedToPoints:")
@@ -384,8 +375,7 @@ for c in cnts:
 
         # Clearing arrays for next run
         pts = np.delete(pts, np.s_[:], axis=0)
-        ContourBoxPoints = np.delete(ContourBoxPoints, np.s_[:], axis=0)
-        ContourBoxPoints2 = []
+        ContourBoxPoints = []
         
         '''
         cv2.imwrite('output\croped.png', croped)
@@ -469,7 +459,6 @@ if(Write_Enable):
     EntireBoardPointsFileWithConnection.close()
 
 
-
 cv2.imshow('mask', out)
 
 cv2.imshow('Objects Detected', img)
@@ -477,6 +466,6 @@ cv2.imshow('Objects Detected', img)
 print("~~~---FINISH; Logger Status Report:---~~~")
 print(f"Errors: {handler.error_logs}")
 print(f"Warnings: {handler.warning_logs}")
-print(f"NUM of warnings: {len(handler.error_logs)}; NUM of warnings: {len(handler.warning_logs)} ")
+print(f"NUM of ERRORs: {len(handler.error_logs)}; NUM of WARNINGs: {len(handler.warning_logs)} ")
 
 cv2.waitKey(0)

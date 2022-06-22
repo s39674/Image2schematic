@@ -8,7 +8,7 @@ import sys
 import os
 import re
 import logging
-
+from point import *
 
 # images of points, used for image matching
 RectPointRight_img = cv2.imread(
@@ -19,6 +19,7 @@ CircPoint_img = cv2.imread(
 pointImages = [RectPointRight_img, CircPoint_img]
 
 
+# from: https://stackoverflow.com/questions/59345532/error-log-count-and-error-log-messages-as-list-from-logger
 class CustomStreamHandler(logging.StreamHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -183,11 +184,7 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False, logger
 
     # if this variable is too low, try to use other methods to detect points
     Num_Points_Found = 0
-    # dummy array intsilation
-    BoardPointsArray = np.array([[1, 2], [3, 4]])
-    # clearing the array for inputs
-    BoardPointsArray = np.delete(BoardPointsArray, [0, 1], axis=0)
-
+    BoardPointsArray = []
     # finding rectangles
     cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
@@ -204,8 +201,7 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False, logger
             #ar = w / float(h)
             #cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
             cv2.rectangle(copy, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            BoardPointsArray = np.append(
-                BoardPointsArray, [[int(((w)/2) + x), int(((h)/2) + y)]], axis=0)
+            BoardPointsArray.append(point(int(x + (w/2)), int(y + (h/2))))
             Num_Points_Found += 1
 
     #cv2.imshow('RectanglesDetectedByV2', copy)
@@ -232,8 +228,7 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False, logger
         if len(approx) > 5 and area > 100 and area < 500000:
             ((x, y), r) = cv2.minEnclosingCircle(c)
             cv2.circle(copy, (int(x), int(y)), int(r), (36, 255, 12), 2)
-            BoardPointsArray = np.append(
-                BoardPointsArray, [[int(x), int(y)]], axis=0)
+            BoardPointsArray.append(point(int(x), int(y)))
             Num_Points_Found += 1
 
     if Debugging_Enabled:
@@ -251,38 +246,36 @@ def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False, logger
         # It also returns an image with the found point removed so we could try to find other points
         for pointImage in pointImages:
 
-            FoundPoint = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+            foundMatch = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
 
-            while FoundPoint is not None:
+            while foundMatch is not None:
                 
                 # -1,-1,-1,-1 code for duplicate, still need to remove it and retry
-                if FoundPoint[0:4] == [-1,-1,-1,-1]:
-                    ReturnedImage = FoundPoint[4]
-                    FoundPoint = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+                if foundMatch[0:4] == [-1,-1,-1,-1]:
+                    ReturnedImage = foundMatch[4]
+                    foundMatch = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
                     continue
 
-                ReturnedImage = FoundPoint[4]
-                FoundPoint = FoundPoint[:4]
+                ReturnedImage = foundMatch[4]
+                foundMatch = foundMatch[:4]
 
                 if Debugging_Enabled:
                     print("found a point at: x1,y1: {},{}; x2,y2: {},{}".format(
-                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2], FoundPoint[1]+FoundPoint[3]))
+                    foundMatch[0], foundMatch[1], foundMatch[0] + foundMatch[2], foundMatch[1]+foundMatch[3]))
                     cv2.imshow("ReturnedImage", ReturnedImage)
                     cv2.waitKey(0)
                 
-                cv2.rectangle(copy, (FoundPoint[0], FoundPoint[1]), (FoundPoint[0] +
-                                                        FoundPoint[2], FoundPoint[1]+FoundPoint[3]), (0, 0, 255), 2)
+                cv2.rectangle(copy, (foundMatch[0], foundMatch[1]), (foundMatch[0] +
+                                                        foundMatch[2], foundMatch[1]+foundMatch[3]), (0, 0, 255), 2)
 
-                # entering the middle point of the FoundPoint - for best accuarcy
+                # entering the middle point of the foundMatch - for best accuarcy
                 # [ [ w / 2 + x, h / 2 + y ] ]
-                BoardPointsArray = np.append(
-                    BoardPointsArray, [[int((FoundPoint[2]/2)+FoundPoint[0]), int((FoundPoint[3]/2)+FoundPoint[1])]], axis=0)
-                
+                BoardPointsArray.append(point(foundMatch[0] + (foundMatch[2]/2), foundMatch[1] + (foundMatch[3]/2)) )
                 Num_Points_Found += 1
             
                 #elif Debugging_Enabled: print("NOTE: Image matching returned None.")
 
-                FoundPoint = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+                foundMatch = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
 
 
 
@@ -386,12 +379,11 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
         # as we got an area, just take the middle point and compare that.
         if AlreadyFoundPoints is not None:
             for Point in AlreadyFoundPoints:
-                if isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
-                    if Debug_Enable: print("Found Duplicate!")
-                    cv2.rectangle(img, (x, y), (x+w, y+h), (int(DominotColor[0]), int(DominotColor[1]), int(DominotColor[2])), -1)
-                    return [-1,-1,-1,-1,img]
-
-
+                if isinstance(Point, point):
+                    if Point.IsCloseToOtherPoint(point(int(x+ w/2), int(y+h/2))):
+                        return None
+                elif isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
+                    return None
         cv2.rectangle(img, (x, y), (x+w, y+h), (int(DominotColor[0]), int(DominotColor[1]), int(DominotColor[2])), -1)
         
         if Debug_Enable:

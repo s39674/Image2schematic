@@ -2,7 +2,7 @@
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
-**Image2schematic** is a Python program that aims to provide a reliabe tool for everyone to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
+**Image2schematic** is a Python project that aims to provide a reliable tool for everyone to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
 
 We use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
 
@@ -21,7 +21,6 @@ There are multiple stages needed for this project:
 
 2. Using `OpenCV`, we need to understand the pin to pin traces, and assign each point with it's corrosponding x and y coordinates.
 
-    **SITREP**: Very far into it. `Board8.png` works very good.
 
 3. Using OCR, we need the understand the text on the ICs that are on the board, and then pass that into `skidl` search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
 
@@ -29,7 +28,7 @@ There are multiple stages needed for this project:
 
 4. Using all this data metioned above, and using skidl, we will craft a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
 
-    **SITREP**: very close to outputing a test schematic using skidl syntax.
+    **SITREP**: `skidl_to_schematic` is currently not working.
 
 
 ## Testing
