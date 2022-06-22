@@ -58,21 +58,14 @@ def GetPointsFromFile(File):
     # clearing the array for inputs
     EntireBoardPoints = np.delete(EntireBoardPoints, [0, 1], axis=0)
 
-    # getting the data from the string into numpy array
-    end_bracket_index = 0
-    while(end_bracket_index != len(EBP_String)):  # not really necessary
-        start_bracket_index = EBP_String.find("[", end_bracket_index)
-        middle_index = EBP_String.find(",", start_bracket_index)
-        # if not the +1 it would give the same position
-        end_bracket_index = EBP_String.find("]", end_bracket_index+1)
-        #print("start_bracket_index: ", start_bracket_index, " middle_index: ",
-        #      middle_index, " end_bracket_index: ", end_bracket_index)
-        if (start_bracket_index == -1):  # if not found
-            break
-        else:
-            EntireBoardPoints = np.append(
-                EntireBoardPoints, [[int(EBP_String[(start_bracket_index+1): (middle_index)]),
-                                     int(EBP_String[(middle_index+1): (end_bracket_index)])]], axis=0)  # not sure why but this form works
+    #regex to find list of all expressions matching [number, number]
+    points = re.findall("\[[0-9]+\,[0-9]+\]", EBP_String)
+
+    #adds all points to numpy array
+    if points:
+        for i in range(len(points)):
+            EntireBoardPoints = np.append(EntireBoardPoints, [np.fromstring(points[i][1:-1], dtype=int, sep=',')], axis=0)
+
     return EBP_String, EntireBoardPoints
 
 def formatize_EBP_string(EBP_String):
