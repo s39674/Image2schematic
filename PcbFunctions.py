@@ -375,6 +375,10 @@ def isThosePointsTheSame(x1: int, y1: int, x2: int, y2: int, rel_tol: float = 0.
 
 # IC info functions
 
+def GetEstimatedPins(IC_image):
+    """Return how many pins are there in an IC image, using standard silver color of pins"""
+    pass
+
 def GetAmountOfPins(IcPinInfo):
     """
     This function takes skidl's format of ic information and returns the total
@@ -443,6 +447,7 @@ def ICimageToSkidl(IC_image, reader, MinICchars: int = 4, Debugging_Enable = Fal
     old_stdout = sys.stdout
     new_stdout = io.StringIO()
     sys.stdout = new_stdout
+
     output = []
     for candidate in candidates:
         SearchResult = search(str(candidate[1]))
@@ -466,7 +471,7 @@ def ICimageToSkidl(IC_image, reader, MinICchars: int = 4, Debugging_Enable = Fal
     while i < len(output):
         show_Message = show(output[i], output[i+1])
         if "ERROR" and "WARNING" not in show_Message:
-            print(f"Found IC: ICname: {output[i+1]} ICdesc: {output[i]}")
+            print(f"[ii] Found IC: ICname: {output[i+1]} ICdesc: {output[i]}")
             # return Chip name, Chip description, angle
             return output[i+1], output[i], chipAngle
         i += 2
@@ -474,7 +479,7 @@ def ICimageToSkidl(IC_image, reader, MinICchars: int = 4, Debugging_Enable = Fal
     return "Unknown IC name", "Unknown IC desc", None
 
 
-def FilterResults(Results, MinICchars = 4, minThreshold = 0.5):
+def FilterResults(Results, MinICchars = 4, minThreshold = 0.3):
     candidates = []
     for Result in Results:
         # First filter all with len < 4    => There is propaly no IC with that few chars
@@ -490,8 +495,6 @@ def FilterResults(Results, MinICchars = 4, minThreshold = 0.5):
 def Feature_matching2(img, Img_Point):
     '''
     A function that looks for an image inside of another img.\n
-    Note: Super dumb algorithm that just sweeps through the image trying to find the perfect match.
-    Should not be used for anything sensitive.
     Input: the image that The point should be inside it, The image of how the point should look like,
     And a value used to filter false positives.
     Output: The x,y,w,h of where the Img_Point is inside img. Or a -1 if threshold not meeted. The function always returns something.

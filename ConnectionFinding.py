@@ -33,8 +33,11 @@ IC_detectTest = True
 
 
 if IC_detectTest:
-    import easyocr
-    reader = easyocr.Reader(['en'], gpu=True)
+    try:
+        import easyocr
+        reader = easyocr.Reader(['en'], gpu=True)
+    except ModuleNotFoundError:
+        print("[WW] EasyOCR not installed - IC detection disabled. Please see the installation guide to install EasyOCR")
 
 # Change path here according to your image location
 img = cv2.imread(
@@ -95,14 +98,18 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             if Debugging_Enable: print("potentially chip at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
 
             FoundChip = chip(point(int(x), int(y)), point(int(x+w),int(y+h)),"Unknown chip", "Unknown chip desc", ConnectedToPCB=MyPCB)
-            # should set chipAngle right here.
             
             if IC_detectTest:
                 # Passing the cropped image of the IC to extract text and pinout
                 ChipName, ChipDescription, ChipAngle = ICimageToSkidl(img[y:y+h, x:x+w], reader, Debugging_Enable)
+                
                 FoundChip.IcName = ChipName
                 FoundChip.IcDescription = ChipDescription
                 FoundChip.ChipAngle = ChipAngle
+
+                # TODO: see issue num: #22
+                #if ChipName == "Unknown IC name":
+                #    FoundChip.estimatedPinNum = GetEstimatedPins(IC_image)
             
             MyPCB.addChip(FoundChip)
 
