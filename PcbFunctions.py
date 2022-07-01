@@ -1,3 +1,6 @@
+"""
+This file holds various functions to process data. 
+"""
 
 import math
 import numpy as np
@@ -5,7 +8,10 @@ import cv2
 import sys
 import io
 from skidl import search,show
-
+import os
+import re
+import logging
+from point import *
 
 
 # images of points, used for image matching
@@ -16,10 +22,26 @@ CircPoint_img = cv2.imread(
 
 pointImages = [RectPointRight_img, CircPoint_img]
 
+
+# from: https://stackoverflow.com/questions/59345532/error-log-count-and-error-log-messages-as-list-from-logger
+class CustomStreamHandler(logging.StreamHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.error_logs = []
+        self.warning_logs = []
+
+    def emit(self, record):
+        if record.levelno == logging.ERROR:
+            self.error_logs.append(record)
+        elif record.levelno == logging.WARNING:
+            self.warning_logs.append(record)
+        super().emit(record)
+
 def get_ordered_list(points, x, y):
    points.sort(key = lambda p: (p.x - x)**2 + (p.y - y)**2)
    return points
 
+# Points File functions
 def GetPointsFromFile(File):
     '''
     a function thats returning the file as a string and numpy array containing all the points
@@ -40,24 +62,57 @@ def GetPointsFromFile(File):
     # clearing the array for inputs
     EntireBoardPoints = np.delete(EntireBoardPoints, [0, 1], axis=0)
 
-    # getting the data from the string into numpy array
-    end_bracket_index = 0
-    while(end_bracket_index != len(EBP_String)):  # not really necessary
-        start_bracket_index = EBP_String.find("[", end_bracket_index)
-        middle_index = EBP_String.find(",", end_bracket_index)
-        # if not the +1 it would give the same position
-        end_bracket_index = EBP_String.find("]", end_bracket_index+1)
-        # print("start_bracket_index: ", start_bracket_index, " middle_index: ",
-        #      middle_index, " end_bracket_index: ", end_bracket_index)
-        if (start_bracket_index == -1):  # if not found
-            break
-        else:
-            EntireBoardPoints = np.append(
-                EntireBoardPoints, [[int(EBP_String[(start_bracket_index+1): (middle_index)]),
-                                     int(EBP_String[(middle_index+1): (end_bracket_index)])]], axis=0)  # not sure why but this form works
+    #regex to find list of all expressions matching [number, number]
+    points = re.findall("\[[0-9]+\,[0-9]+\]", EBP_String)
+
+    #adds all points to numpy array
+    if points:
+        for i in range(len(points)):
+            EntireBoardPoints = np.append(EntireBoardPoints, [np.fromstring(points[i][1:-1], dtype=int, sep=',')], axis=0)
 
     return EBP_String, EntireBoardPoints
 
+def formatize_EBP_string(EBP_String):
+    """
+    :param EBP_string entire Board points string, got from file
+
+    By @ObaidAshraf
+    """
+    EBP_String = re.sub("[C|c]onnected [T|t]o", "connected to", EBP_String)
+    allIndices = []
+    allLinesLen = []
+    maxBreakPoint = 0
+    maxLineLen = 0
+    finalStr = ""
+
+    for line in EBP_String.split('\n'):
+      idx = line.find("connected to")
+      allIndices.append(idx)
+      if (idx < 0):
+        allLinesLen.append(len(line))
+    maxBreakPoint = max(allIndices)
+    maxLineLen = max(allLinesLen)
+    if (maxLineLen > maxBreakPoint):
+      maxBreakPoint = maxLineLen
+    for line in EBP_String.split('\n'):
+      breakPoint = line.find("connected to")
+      if (breakPoint < 0):
+        finalStr += line
+        finalStr += '\n'
+      else:
+        finalStr += line[0:breakPoint]
+        for i in range(breakPoint, maxBreakPoint+3):
+          finalStr += ' '
+        finalStr += "=>"
+        for i in range(0, 2):
+          finalStr += ' '
+        finalStr += line[breakPoint:]
+        finalStr += '\n'
+
+    return finalStr
+
+
+# OpenCV functions
 
 def GetContours(img):
     '''
@@ -108,7 +163,7 @@ def PutOnTopBigBlack(image):
     cv2.destroyAllWindows()
     return l_img
 
-def DetectPointsV2(image, Debugging_Enabled = True):
+def DetectPointsV2(image, Debugging_Enabled = False, AlwaysUseTM = False, logger = None):
     '''
     ## version 2 of DetectingCircles.\n
     This function takes an image and returns a numpy 3-diminisonal array contining all points.
@@ -124,20 +179,16 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.medianBlur(gray, 11)
-    # a varibale that display's how much points was found, if 1 then that means i didn't get the other one so resort to diffrent methods
-    Num_Points_Found = 0
-    # it also captures the rectangles points
+    # This also captures the rectangles points
     thresh = cv2.threshold(
         blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     if Debugging_Enabled:
         cv2.imshow('blur', blur)
         cv2.imshow('thresh', thresh)
 
-    # dummy array intsilation
-    BoardPointsArray = np.array([[1, 2], [3, 4]])
-    # clearing the array for inputs
-    BoardPointsArray = np.delete(BoardPointsArray, [0, 1], axis=0)
-
+    # if this variable is too low, try to use other methods to detect points
+    Num_Points_Found = 0
+    BoardPointsArray = []
     # finding rectangles
     cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
@@ -145,16 +196,16 @@ def DetectPointsV2(image, Debugging_Enabled = True):
     for c in cnts:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        print("Approx: ", len(approx))
         area = cv2.contourArea(c)
-        print(area)
+        if Debugging_Enabled:
+            print("Approx: ", len(approx))
+            print(area)
         if len(approx) == 4 and area > 50 and area < 200:
             (x, y, w, h) = cv2.boundingRect(approx)
             #ar = w / float(h)
             #cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
             cv2.rectangle(copy, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            BoardPointsArray = np.append(
-                BoardPointsArray, [[int(((w)/2) + x), int(((h)/2) + y)]], axis=0)
+            BoardPointsArray.append(point(int(x + (w/2)), int(y + (h/2))))
             Num_Points_Found += 1
 
     #cv2.imshow('RectanglesDetectedByV2', copy)
@@ -175,54 +226,68 @@ def DetectPointsV2(image, Debugging_Enabled = True):
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
-        # print(area)
+        if Debugging_Enabled:
+            print("Approx: ", len(approx))
+            print(area)
         if len(approx) > 5 and area > 100 and area < 500000:
             ((x, y), r) = cv2.minEnclosingCircle(c)
             cv2.circle(copy, (int(x), int(y)), int(r), (36, 255, 12), 2)
-            BoardPointsArray = np.append(
-                BoardPointsArray, [[int(x), int(y)]], axis=0)
+            BoardPointsArray.append(point(int(x), int(y)))
             Num_Points_Found += 1
+
     if Debugging_Enabled:
-        cv2.imshow('Both_Rec&Circs_DetectedByV2', copy)
+        cv2.imshow('Rec&Circs DetectedByV2 contours', copy)
         print("Num_Points_Found before image matching: ", Num_Points_Found)
         print(BoardPointsArray)
 
-    # if only found one point or less, try to find others using image matching
-    if Num_Points_Found < 2:
-        print("NOTE: on this run, I found less than two points -> trying to find others using image matching!")
+    # if we found only one point or less, try to find others using image matching
+    # OR if flag AlwaysUseTM is True, useful for making sure we got everything
+    if Num_Points_Found < 2 or AlwaysUseTM:
+        if not AlwaysUseTM: print("[ii] on this run, I found less than two points -> trying to find others using image matching!")
         
         # Because were using image matching, we need to try each of our images of how the pcb points looks like
-        # return x,y,w,h of the image of the point inside the bigger image
+        # Template_matching returns x,y,w,h of the image of the point inside the contour
+        # It also returns an image with the found point removed so we could try to find other points
         for pointImage in pointImages:
-            FoundPoint = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
-            if FoundPoint:
 
-                cv2.rectangle(copy, (FoundPoint[0], FoundPoint[1]), (FoundPoint[0] +
-                                                        FoundPoint[2], FoundPoint[1]+FoundPoint[3]), (0, 0, 255), 2)
+            foundMatch = Template_matching(image, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+
+            while foundMatch is not None:
                 
-                if Debugging_Enabled: print("found a FoundPoint point at: x1,y1: {},{}; x2,y2: {},{}".format(
-                    FoundPoint[0], FoundPoint[1], FoundPoint[0] + FoundPoint[2],  FoundPoint[1]+FoundPoint[3]))
+                # -1,-1,-1,-1 code for duplicate, still need to remove it and retry
+                if foundMatch[0:4] == [-1,-1,-1,-1]:
+                    ReturnedImage = foundMatch[4]
+                    foundMatch = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
+                    continue
+
+                ReturnedImage = foundMatch[4]
+                foundMatch = foundMatch[:4]
+
+                if Debugging_Enabled:
+                    print("found a point at: x1,y1: {},{}; x2,y2: {},{}".format(
+                    foundMatch[0], foundMatch[1], foundMatch[0] + foundMatch[2], foundMatch[1]+foundMatch[3]))
+                    cv2.imshow("ReturnedImage", ReturnedImage)
+                    cv2.waitKey(0)
                 
-                # entering the middle point of the FoundPoint - for best accuarcy
+                cv2.rectangle(copy, (foundMatch[0], foundMatch[1]), (foundMatch[0] +
+                                                        foundMatch[2], foundMatch[1]+foundMatch[3]), (0, 0, 255), 2)
+
+                # entering the middle point of the foundMatch - for best accuarcy
                 # [ [ w / 2 + x, h / 2 + y ] ]
-                BoardPointsArray = np.append(
-                    BoardPointsArray, [[int((FoundPoint[2]/2)+FoundPoint[0]), int((FoundPoint[3]/2)+FoundPoint[1])]], axis=0)
-
+                BoardPointsArray.append(point(foundMatch[0] + (foundMatch[2]/2), foundMatch[1] + (foundMatch[3]/2)) )
                 Num_Points_Found += 1
-            elif Debugging_Enabled: print("NOTE: Image matching returned None.")
-        
+            
+                #elif Debugging_Enabled: print("NOTE: Image matching returned None.")
 
-        if Num_Points_Found < 2:
-            print("Error - Image matching Cannot find all points :(")
+                foundMatch = Template_matching(ReturnedImage, pointImage, 0.81, Debugging_Enabled, BoardPointsArray)
 
-        if Num_Points_Found > 2:
-            print("Error: 3 or more points found.")
-            print(f"BoardPointsArray: {BoardPointsArray} ")
-        
-    else:
-        print("2 points found!")
 
-    print("Num_Points_Found after image matching: ", Num_Points_Found)
+
+        if Num_Points_Found < 2 and logger:
+            logger.warning("[WW] Image matching Cannot find all points.")
+
+
+    if Debugging_Enabled: print("Num_Points_Found after image matching: ", Num_Points_Found)
     #cv2.imshow('thresh', thresh)
     #cv2.imshow('opening', opening)
     #cv2.imshow('CirclesDetectedByV2', image)
@@ -242,6 +307,7 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
     @DesValue a value used to filter false positives
     @Debug_Enable show verbose printing and image processing
     @AlreadyFoundPoints optinal parameter to avoid getting points that are already detected
+    @IsRect - because this function flag circle point middle point as the left-up most point and rect point as sort middle point, need to diff between them 
     '''
     
 
@@ -276,7 +342,6 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
     for pt in zip(*loc[::-1]):
         if(i > 3):
             break
-        print("!!!")
         cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
         MatchingRectCordArray = np.append(
             MatchingRectCordArray, [[pt[0], pt[1], pt[0] + w,  pt[1] + h]], axis=0)
@@ -284,21 +349,24 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
     
     '''
 
-    if(Debug_Enable):
-        cv2.imshow("TMStartImg", img)
+    DominotColor = GetDominotColor(img)
+
+    #if(Debug_Enable):
+        #cv2.imshow("TMStartImg", img)
         #cv2.imshow("imgpoint", Img_Point)
 
     #result = cv2.matchTemplate(Img_Point, img, cv2.TM_SQDIFF_NORMED)
     result = cv2.matchTemplate(Img_Point, img, cv2.TM_CCOEFF_NORMED)
+    
     if(Debug_Enable):
         cv2.imshow('O_TM_Template', result)
 
     # We want the minimum squared difference
     (mn, maxVal, mnLoc, maxLoc) = cv2.minMaxLoc(result)
 
-    conf = result.max()
 
     if(Debug_Enable):
+        conf = result.max()
         print("maxVal: ", maxVal)
         print("conf: ", conf)
 
@@ -315,21 +383,24 @@ def Template_matching(img, Img_Point, DesValue = 0.81, Debug_Enable = False, Alr
         # as we got an area, just take the middle point and compare that.
         if AlreadyFoundPoints is not None:
             for Point in AlreadyFoundPoints:
-                if isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
+                if isinstance(Point, point):
+                    if Point.IsCloseToOtherPoint(point(int(x+ w/2), int(y+h/2))):
+                        return None
+                elif isThosePointsTheSame( (w / 2 + x), (h / 2 + y), Point[0], Point[1] ):
                     return None
-
+        cv2.rectangle(img, (x, y), (x+w, y+h), (int(DominotColor[0]), int(DominotColor[1]), int(DominotColor[2])), -1)
+        
         if Debug_Enable:
-            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
             print(f"Threshold meeted: boxInTemplateMatching: x1,y1: {x},{y}; x2,y2: {x+w},{y+h}")
             # Display the original image with the rectangle around the match.
             cv2.imshow('O_TM', img)
             # print(MatchingRectCordArray)
             cv2.waitKey(0)
-
-        return x, y, w, h
+        
+        return x, y, w, h, img
     else:
         if Debug_Enable:
-            print("Threshold not meeted")
+            print("Threshold not meeted!")
             # for threshold
             #cv2.waitKey(0)
         return None
@@ -373,7 +444,7 @@ def isThosePointsTheSame(x1: int, y1: int, x2: int, y2: int, rel_tol: float = 0.
     return False
 
 
-# IC info functions
+# IC info string functions
 
 def GetEstimatedPins(IC_image):
     """Return how many pins are there in an IC image, using standard silver color of pins"""

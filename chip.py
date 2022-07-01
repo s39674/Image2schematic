@@ -4,7 +4,7 @@ from point import *
 class chip:
     
     IcName = None
-    IcDescription = None
+    Iclibrary = None
     # an array to store all pointers to the pcb points that are connected to this ic
     pins = []
     # this variable is used when we can't find info about a given chip. NOTE: this is not directly linked to self.pins.
@@ -38,7 +38,7 @@ class chip:
         self.estimatedPinNum = estimatedPinNum
 
         if IcName: self.IcName = IcName
-        if IcDescription: self.IcDescription = IcDescription
+        if Iclibrary: self.Iclibrary = Iclibrary
 
         if ChipAngle: self.ChipAngle = ChipAngle
 
@@ -58,8 +58,9 @@ class chip:
             if PIN.ConnectedToPCB is not None:
                 PIN.ConnectedToPCB = self.ConnectedToPCB
 
-    def printInfo(self) -> None:
+    def printInfo(self, verbose = 0) -> None:
         print(f"Chip name: {self.IcName}")
-        print("Pins:")
-        for pin in self.pins:
-            print(f"[{pin.x}, {pin.y}]")
+        if verbose > 0:
+            print("Pins:")
+            for pin in self.pins:
+                print(f"[{pin.x}, {pin.y}]")

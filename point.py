@@ -10,10 +10,10 @@ class point:
 
     ConnectedToPoints = []
 
-    # For future: hold the pin information from skidl search function
-    # pinInfo = None
+    # holds the pin information from skidl search function
+    pinInfo = None
     
-    def __init__(self, x: float = None, y: float = None, ConnectedToPoints = None, ConnectedToChip = None, ConnectedToPCB = None):
+    def __init__(self, x: float = None, y: float = None, ConnectedToPoints = None, ConnectedToChip = None, ConnectedToPCB = None, pinInfo: str = None):
         if x: self.x = x
         else: self.x = 0
         
@@ -25,7 +25,10 @@ class point:
         if ConnectedToPoints: self.ConnectedToPoints = ConnectedToPoints
         # IF I DONT DO THIS it has "shared memory" with other points!
         else: self.ConnectedToPoints = []
+        
         if ConnectedToPCB: self.ConnectedToPCB = ConnectedToPCB
+
+        if pinInfo: self.pinInfo = pinInfo
 
     def ConnectToPoints(self, otherPoints = None) -> None:
         # Check if it's the current point or it is already in ConnectedToPoints 
