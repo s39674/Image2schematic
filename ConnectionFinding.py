@@ -34,12 +34,6 @@ ICS_Introduced = True
 IC_detectTest = True
 
 
-if IC_detectTest:
-    try:
-        import easyocr
-        reader = easyocr.Reader(['en'], gpu=True)
-    except ModuleNotFoundError:
-        print("[WW] EasyOCR not installed - IC detection disabled. Please see the installation guide to install EasyOCR")
 
 # Change path here according to your image location
 img = cv2.imread(
@@ -56,6 +50,12 @@ logger.setLevel(logging.INFO)
 handler = CustomStreamHandler()
 logger.addHandler(handler)
 
+if IC_detectTest:
+    try:
+        import easyocr
+        reader = easyocr.Reader(['en'], gpu=True)
+    except ModuleNotFoundError:
+        logger.warning("[WW] EasyOCR not installed - IC detection disabled. Please see the installation guide to install EasyOCR")
 
 """
 # for future use
