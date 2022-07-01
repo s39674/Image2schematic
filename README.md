@@ -1,12 +1,12 @@
-# Image2schematic
+# Image2schematic - EasyOCR branch
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
-**Image2schematic** is a Python project that aims to provide a reliable tool for everyone to extract PCB schematics from images using Computer Vision. Any help is greatly appreciated!
+### **Image2schematic** is a Python project that aims to provide a reliable tool for everyone to extract PCB schematics from images using Computer Vision and Neural networks. Any help is greatly appreciated!
 
-We use `OpenCV` (https://opencv.org/) for image detection and modification and `skidl` (https://github.com/devbisme/skidl) for building out a schematic.
+We use [`OpenCV`](https://opencv.org/) for image detection and modification and [`skidl`](https://github.com/devbisme/skidl) for building out a schematic. In addition, [`PCB-CD`](https://github.com/s39674/PCB-Component-Detection) is used to classify pcb components and [`EasyOCR`](https://github.com/JaidedAI/EasyOCR/) to read text on chips.
 
-**Global SITREP**: Currently working on IC text detection using EasyOCR: https://github.com/JaidedAI/EasyOCR, please see the dedicated branch on this topic.
+**Global SITREP**: Got EasyOCR working to some degree; The dedicated branch has been merged.
 
 ---------------------------------------------------
 
@@ -16,29 +16,25 @@ There are multiple stages needed for this project:
 
     <p align="left"><img src="assets/Example_images/Board_images/Board7.png" alt="assets/Example_images/Board_images/Board7.png" width="400"/></p>
 
-    **SITREP**: currently no progress on that have been achived, any ideas would be greatly appreciated!
+2. Using `OpenCV` and `PCB-CD`, we need to identify pcb components such as resistors, capacitors, Integrated Circuits etc. For example:
 
+<!-- add image here 
 
-2. Using `OpenCV`, we need to understand the pin to pin traces, and assign each point with it's corrosponding x and y coordinates.
+```Predicted Output: capacitor```
+-->
 
+3. For every chip that got detected, using `OpenCV` and  `EasyOCR`, we need to extract the text on those ICs, and then pass that into `skidl` `search()` function to get the pinout of the Integrated Circuit, as well as the schematic symbol.
 
-3. Using OCR, we need the understand the text on the ICs that are on the board, and then pass that into `skidl` search function to get the pinout of that Integrated circuit, as well as the schematic symbol of that IC.
+4. Using `OpenCV`, we will now analyze the pin to pin traces that connect between components.
 
-    **SITREP**: For now, we use `EasyOCR` for extracting text, please see dedicated branch.
-
-4. Using all this data metioned above, and using skidl, we will craft a file with skidl syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
+5. Using all this data metioned above, and using `skidl`, we will craft a file with skidl's syntax describing the circut, and then output a schematic using `skidl_to_schematic` tool.
 
     **SITREP**: `skidl_to_schematic` is currently not working.
 
 
 ## Testing
 
-Make sure you have `skidl` and `OpenCV` installed:
 
-```bash
-$ pip install opencv-python
-$ pip install skidl
-```
 
 **Note**: 
 `skidl` does require some part libraries from `KiCAD`. IF you don't want to install `KiCAD` you can just install the part libraries from: https://gitlab.com/kicad/libraries/kicad-symbols then point the environment variable to it:
@@ -48,6 +44,20 @@ $ git clone https://gitlab.com/kicad/libraries/kicad-symbols
 $ setx KICAD KICAD_SYMBOL_DIR="/path/to/kicad/symbols/"
 # for linux:
 $ export KICAD_SYMBOL_DIR="/path/to/kicad/symbols/"
+
+$ pip install skidl
+```
+
+To test IC text detection, you need to install `EasyOCR`: https://github.com/JaidedAI/EasyOCR/
+
+EasyOCR, as far as i can tell, only works with `opencv=<4.5.4.60`:
+
+```bash
+$ pip install easyocr
+# easyocr unnecessary install this package which interfere with opencv-python:
+$ pip uninstall opencv-python-headless
+# IF you have another opencv package, uninstall it and then:
+$ pip install opencv-python==4.5.4.60
 ```
 
 After you cloned the repository, <ins>first run</ins> `detectingPoints.py`:
@@ -93,8 +103,6 @@ If you encountered any issues during installation or testing of `Image2schematic
 
 ## Few topics i need help with:
 
-- More than 2 point connection finding - right now I can't detect lines that connect 3 different components at once.
-- Skidl_to_schematic algorithm - I can't get the algorithm that take skidl code and output a schematic to work.
 - Using yolo or other image classification algorithm to classify a component as either a capacitor, resistor etc.
 
 I want to thank you for reading this and i hope you can help me, thank you!

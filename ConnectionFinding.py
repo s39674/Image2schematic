@@ -6,7 +6,6 @@ this program finds connections between points.
 This program also associate every point with an IC that's connected to it.
 All the data then gets writen to a new points file.
 """
-
 import math
 import sys
 import cv2
@@ -23,7 +22,7 @@ print("~~~---STARTING - Detecting Connection---~~~")
 
 MyPCB = PrintedCircutBoard()
 
-# Please change this value according to your image name
+# Please change this value according to your image name; Please don't enter here a path, see comment below
 ImageName = "Board8.png"
 # Debug mode allows you to see the image processing more clearly
 Debugging_Enable = False
@@ -31,10 +30,16 @@ Debugging_Enable = False
 Write_Enable = True
 # If there are no chips/integrated circuits, the process could be a lot faster.
 ICS_Introduced = True
+# Try to recognize Chip's pinouts
 IC_detectTest = True
-# If above is true, please provide the name of the IC that works with skidl search function,
-# IC identification is a future feature, please see dedicated branch
-IcName = ['MCU_Microchip_ATtiny','ATtiny841-SS']
+
+
+
+# Change path here according to your image location
+img = cv2.imread(
+    f'assets/Example_images/Board_images/{ImageName}', cv2.IMREAD_COLOR)
+if img is None:
+    sys.exit("Could not read image. Please check file integrity/path.")
 
 logger = logging.getLogger()
 
@@ -45,11 +50,12 @@ logger.setLevel(logging.INFO)
 handler = CustomStreamHandler()
 logger.addHandler(handler)
 
-
-img = cv2.imread(
-    f'assets/Example_images/Board_images/{ImageName}', cv2.IMREAD_COLOR)
-if img is None:
-    sys.exit("Could not read the image.")
+if IC_detectTest:
+    try:
+        import easyocr
+        reader = easyocr.Reader(['en'], gpu=True)
+    except ModuleNotFoundError:
+        logger.warning("[WW] EasyOCR not installed - IC detection disabled. Please see the installation guide to install EasyOCR")
 
 """
 # for future use
@@ -72,16 +78,70 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
     # this assusmes the most used color is the color of the board!
     BoardColor = GetDominotColor(img)
     
+
+    #IC Detection
+    #TODO: IC color mask
+    lower_val = np.array([45,45,45])
+    upper_val = np.array([70,70,70])
+    icMask = cv2.inRange(img, lower_val, upper_val)
     
+    if Debugging_Enable:
+        cv2.imshow('icMask', icMask)
+        cv2.waitKey(0)
+    
+    # on IC Mask
+    # if IC_detectTest, than try to find the name; else just put: "Unknowen IC"
+    cnts = cv2.findContours(icMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    for c in cnts:
+        #print("looping over chips")
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+        #print("Approx: ", len(approx))
+        area = cv2.contourArea(c)
+        #print("Area: ", area)
+        
+        if len(approx) == 4 and area > Threshold_AreaMin and area < Threshold_AreaMax:
+            
+            (x, y, w, h) = cv2.boundingRect(approx)
+            
+            if Debugging_Enable: print("potentially chip at: {},{} to: {},{}".format(x,y,(x+w),(y+h)))
+
+            FoundChip = chip(point(int(x), int(y)), point(int(x+w),int(y+h)),"Unknown chip", "Unknown chip desc", ConnectedToPCB=MyPCB)
+            
+            if IC_detectTest:
+                # Passing the cropped image of the IC to extract text and pinout
+                ChipName, ChipDescription, ChipAngle = ICimageToSkidl(img[y:y+h, x:x+w], reader, Debugging_Enable)
+                
+                FoundChip.IcName = ChipName
+                FoundChip.IcDescription = ChipDescription
+                FoundChip.ChipAngle = ChipAngle
+
+                # TODO: see issue num: #22
+                #if ChipName == "Unknown IC name":
+                #    FoundChip.estimatedPinNum = GetEstimatedPins(IC_image)
+            
+            MyPCB.addChip(FoundChip)
+
+            # show what ics got detected
+            cv2.rectangle(IcsDetected, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            # hiding that silk trace with a rectangle whose color is the same as the entire board
+            cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
+                          (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
+        
+        else: logger.info(f"[ii] please note, a contour didn't match Threshold range. Contour Approx: {len(approx)} ; Area: {area}")
+    """
+    # Silk screen mask
     # setting lower and upper limit of the color, should be white for silk traces
     lower_val = np.array([170, 170, 170])
     upper_val = np.array([255, 255, 255])
     # Threshold the bgr image to get only that range of colors
-    mask = cv2.inRange(img, lower_val, upper_val)
+    silkMask = cv2.inRange(img, lower_val, upper_val)
 
-    
-    cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL,
+    cnts = cv2.findContours(silkMask, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
+
 
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     for c in cnts:
@@ -105,8 +165,10 @@ def DetectICsSilk(img, Threshold_AreaMin = 80, Threshold_AreaMax = 70000):
             # hiding that silk trace with a rectangle whose color is the same as the entire board
             cv2.rectangle(img, (x-2, y-2), (x+w, y+h),
                           (int(BoardColor[0]), int(BoardColor[1]), int(BoardColor[2])), -1)
+            
+    """
         
-        else: logger.info(f"[ii] please note, a contour didn't match Threshold range. Contour Approx: {len(approx)} ; Area: {area}")
+    
     return img
 
 
@@ -206,6 +268,7 @@ if ICS_Introduced:
                 #print(ClosePinPoint)
                 # the skidl ic query format is not perfect. it starts at pin 1 and goes to pin 10,11,12 and so on.
                 # this takes care of it.
+                # TODO: catch index error
                 while f"/{i}/" not in CurrentICqueryResult[i]:
                     CurrentICqueryResult.append(CurrentICqueryResult.pop(i))
                 
