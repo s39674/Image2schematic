@@ -1,10 +1,10 @@
-# Image2schematic - EasyOCR branch
+# Image2schematic
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
 ### **Image2schematic** is a Python project that aims to provide a reliable tool for everyone to extract PCB schematics from images using Computer Vision and Neural networks. Any help is greatly appreciated!
 
-We use [`OpenCV`](https://opencv.org/) for image detection and modification and [`skidl`](https://github.com/devbisme/skidl) for building out a schematic. In addition, [`PCB-CD`](https://github.com/s39674/PCB-Component-Detection) is used to classify pcb components and [`EasyOCR`](https://github.com/JaidedAI/EasyOCR/) to read text on chips.
+We use [OpenCV](https://opencv.org/) for image detection and modification and [skidl](https://github.com/devbisme/skidl) for building out a schematic. In addition, [PCB-CD](https://github.com/s39674/PCB-Component-Detection) is used to classify pcb components and [EasyOCR](https://github.com/JaidedAI/EasyOCR/) to read text on chips.
 
 **Global SITREP**: Got EasyOCR working to some degree; The dedicated branch has been merged.
 
@@ -18,10 +18,9 @@ There are multiple stages needed for this project:
 
 2. Using `OpenCV` and `PCB-CD`, we need to identify pcb components such as resistors, capacitors, Integrated Circuits etc. For example:
 
-<!-- add image here 
+![capacitor5](https://user-images.githubusercontent.com/98311750/176838096-dec35dc6-9f4f-40b5-83ad-082d82fbfe9c.jpg)
 
 ```Predicted Output: capacitor```
--->
 
 3. For every chip that got detected, using `OpenCV` and  `EasyOCR`, we need to extract the text on those ICs, and then pass that into `skidl` `search()` function to get the pinout of the Integrated Circuit, as well as the schematic symbol.
 
@@ -81,21 +80,21 @@ $ python3 ConnectionFinding.py
 If you now look at `PointsFileFor_Board8.png.txt` you should now see every connection from any point: 
 
 ```txt
-Point: [435,479] connected to: (191,171)
-Point: [435,466] connected to: (191,144)
-Point: [435,453] connected to: (191,117)
-Point: [435,439] connected to: (191,91)
-Point: [435,426] connected to: (191,64)
-Point: [436,412] connected to: (191,37)
-ATtiny841-S | 6/PA7/BIDIRECTIONA | [190,171] connected to: (435,479)
-ATtiny841-S | 5/PB2/BIDIRECTIONA | [190,144] connected to: (435,466)
-ATtiny841-S | 4/~{RESET}/PB3/BIDIRECTIONA | [190,117] connected to: (435,453)
-ATtiny841-S | 3/XTAL2/PB1/BIDIRECTIONA | [190,90] connected to: (435,439)
-ATtiny841-S | 2/XTAL1/PB0/BIDIRECTIONA | [190,64] connected to: (435,426)
-ATtiny841-S | 1/VCC/POWER-I | [190,37] connected to: (435,406)
+Point: [435,479]                                                           =>  connected to: (190,171)
+Point: [435,466]                                                           =>  connected to: (190,144)
+Point: [435,453]                                                           =>  connected to: (190,117)
+Point: [435,439]                                                           =>  connected to: (190,90)
+Point: [435,426]                                                           =>  connected to: (190,64)
+Point: [436,412]                                                           =>  connected to: (190,37)
+ATtiny841-SS | 6/PA7,p6,PA7/BIDIRECTIONAL | [190,171]                      =>  connected to: (435,479)
+ATtiny841-SS | 5/PB2,PB2,p5/BIDIRECTIONAL | [190,144]                      =>  connected to: (435,466)
+ATtiny841-SS | 4/~{RESET}/PB3,~{RESET}/PB3,p4/BIDIRECTIONAL | [190,117]    =>  connected to: (435,453)
+ATtiny841-SS | 3/XTAL2/PB1,XTAL2/PB1,p3/BIDIRECTIONAL | [190,90]           =>  connected to: (435,439)
+ATtiny841-SS | 2/XTAL1/PB0,XTAL1/PB0,p2/BIDIRECTIONAL | [190,64]           =>  connected to: (435,426)
+ATtiny841-SS | 1/VCC,p1,VCC/POWER-IN | [190,37]                            =>  connected to: (436,412)
 ```
 
-What we can see are the x,y coordinates of the points, and the x,y coordinates of what point is connected to it. At the bottom we can see what IC is connected to those points and some information about them. (In this example the IC name was hard-coded, IC detection is not ready yet)
+What we can see are the x,y coordinates of the points, and the x,y coordinates of what point is connected to it. At the bottom we can see what IC is connected to those points and some information about them. (In this example the IC name was hard-coded, IC detection example isn't ready yet)
 
 This is the baseline to building an entire schematic.
 
@@ -103,7 +102,9 @@ If you encountered any issues during installation or testing of `Image2schematic
 
 ## Few topics i need help with:
 
-- Using yolo or other image classification algorithm to classify a component as either a capacitor, resistor etc.
+- Using yolo or other image classification algorithm to classify a component as either a capacitor, resistor etc. Please see [PCB-CD](https://github.com/s39674/PCB-Component-Detection) for more info.
+- More than 2 point connection finding - right now I can't detect lines that connect 3 different components at once.
+- Skidl_to_schematic algorithm - I can't get the algorithm that take skidl code and output a schematic to work.
 
 I want to thank you for reading this and i hope you can help me, thank you!
 
