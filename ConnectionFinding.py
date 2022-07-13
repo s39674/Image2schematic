@@ -4,7 +4,7 @@ Please run this program SECOND!
 
 this program finds connections between points.
 This program also associate every point with an IC that's connected to it.
-All the data then gets writen to a new points file.
+All the data then gets written to a new points file.
 """
 import math
 import sys
@@ -183,7 +183,7 @@ try:
         MyPCB.addPoint(point(EBP[0],EBP[1]))
 
 except:
-    logger.error(f"[EE] Could not load the EBP points file. Please check file path: output/Files/PointsFileFor_{ImageName}")
+    logger.error(f"[EE] Could not load the EBP points file. Please check file integrity/path: output/Files/PointsFileFor_{ImageName}")
 
 cv2.imshow('Original Image', img)
 cv2.waitKey(0)

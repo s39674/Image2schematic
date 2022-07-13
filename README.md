@@ -12,15 +12,19 @@ We use [OpenCV](https://opencv.org/) for image detection and modification and [s
 
 There are multiple stages needed for this project:
 
-1. First things first, the raw image needs to be modified so OpenCV better understand it. Something like this is much much better than raw:
+1. First things first, the raw image needs to be modified so that traces between components could be better analysed. Something like this is much much better than raw:
 
     <p align="left"><img src="assets/Example_images/Board_images/Board7.png" alt="assets/Example_images/Board_images/Board7.png" width="400"/></p>
 
-2. Using `OpenCV` and `PCB-CD`, we need to identify pcb components such as resistors, capacitors, Integrated Circuits etc. For example:
+2. Using `OpenCV` and `PCB-CD`, we need to identify pcb components such as resistors, capacitors, Integrated Circuits etc. For example: (This is the back of a Raspberry Pi 3B)
 
-![capacitor5](https://user-images.githubusercontent.com/98311750/176838096-dec35dc6-9f4f-40b5-83ad-082d82fbfe9c.jpg)
+    <p align="left"><img src="https://user-images.githubusercontent.com/98311750/178681915-d89cb4c5-b1ce-4477-803d-0c302c228a07.png" alt="Raspberry Pi 3B back" width="400"/></p>
 
-```Predicted Output: capacitor```
+    And for each detected component we run it through PCB-CD:
+
+    ![capacitor5](https://user-images.githubusercontent.com/98311750/176838096-dec35dc6-9f4f-40b5-83ad-082d82fbfe9c.jpg)
+
+    ```Prediction Output: capacitor```
 
 3. For every chip that got detected, using `OpenCV` and  `EasyOCR`, we need to extract the text on those ICs, and then pass that into `skidl` `search()` function to get the pinout of the Integrated Circuit, as well as the schematic symbol.
 
@@ -33,9 +37,8 @@ There are multiple stages needed for this project:
 
 ## Testing
 
-
-
 **Note**: 
+
 `skidl` does require some part libraries from `KiCAD`. IF you don't want to install `KiCAD` you can just install the part libraries from: https://gitlab.com/kicad/libraries/kicad-symbols then point the environment variable to it:
 ```bash
 $ git clone https://gitlab.com/kicad/libraries/kicad-symbols
@@ -58,6 +61,8 @@ $ pip uninstall opencv-python-headless
 # IF you have another opencv package, uninstall it and then:
 $ pip install opencv-python==4.5.4.60
 ```
+
+For testing pcb components detection, please refer to [PCB-CD](https://github.com/s39674/PCB-Component-Detection) repo.
 
 After you cloned the repository, <ins>first run</ins> `detectingPoints.py`:
 
@@ -98,14 +103,12 @@ What we can see are the x,y coordinates of the points, and the x,y coordinates o
 
 This is the baseline to building an entire schematic.
 
-If you encountered any issues during installation or testing of `Image2schematic`, OR if you have any suggestions, please post them in the issues tab.
+If you encountered any issues during installation or testing of `Image2schematic`, OR if you have any suggestions, please feel free to post them in the issues tab.
 
 ## Few topics i need help with:
 
-- Using yolo or other image classification algorithm to classify a component as either a capacitor, resistor etc. Please see [PCB-CD](https://github.com/s39674/PCB-Component-Detection) for more info.
-- More than 2 point connection finding - right now I can't detect lines that connect 3 different components at once.
-- Skidl_to_schematic algorithm - I can't get the algorithm that take skidl code and output a schematic to work.
+- Component classification needs to be fine tuned to get better results. It should also output confidence percentage. Please see [PCB-CD](https://github.com/s39674/PCB-Component-Detection) for more info.
+- More than 2 point connection finding - right now we can't detect lines that connect 3 different components at once.
+- Skidl_to_schematic algorithm - I can't get the algorithm that takes skidl code and output a schematic to work.
 
 I want to thank you for reading this and i hope you can help me, thank you!
-
-
