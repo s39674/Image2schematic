@@ -67,10 +67,6 @@ if(write_to_file):
         sys.exit("Could not open directory to output the Points file to. error: ", e)
 
 
-
-
-# cv2.namedWindow("output", cv2.WINDOW_FREERATIO)
-
 img = cv2.imread('assets/Example_images/Board_images/{}'.format(ImageName), cv2.IMREAD_COLOR)
 if img is None:
     sys.exit("Could not read the image.")
