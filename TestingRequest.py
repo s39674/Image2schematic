@@ -1,11 +1,14 @@
 
+import re
 import sys
 from bs4 import BeautifulSoup
 import requests
 import json
 #from PyPDF2 import PdfReader
 
-webSiteUrl = "https://octopart.com"
+
+webSiteUrl = "https://www.findchips.com"
+#webSiteUrl = "https://octopart.com"
 
 ICname = "TC1427"
 
@@ -48,8 +51,6 @@ def fetchComponentInfo(ICname: str, webSiteUrl: str = "https://octopart.com", us
             return
 
         JSON_response = json.loads(response.text)
-
-        #print(JSON_response)
 
         """
         # for quering every part:
@@ -117,16 +118,51 @@ def fetchComponentInfo(ICname: str, webSiteUrl: str = "https://octopart.com", us
         
         return part['mpn'], part_description, part['best_datasheet']['url'], webSiteUrl + slug, numOfPins
 
-    else:
-        print(f"Unknown website url: {webSiteUrl}")
-        return
+    elif webSiteUrl.endswith("findchips.com"):
+        # Getting details page for a part
+        response = requests.get(f'{webSiteUrl}/search/{ICname}', headers=headers)
+        if response.status_code != 200:
+            print(f"Got an invalid status code from {webSiteUrl} ! status code: {response.status_code}")
+            return
+        soup = BeautifulSoup(response.text,"lxml")
+
+        firstMatch = soup.find_all('div', class_=re.compile("full-details"))[0]
+        partPage = webSiteUrl+firstMatch.a['href']
+
+        # Getting details for part
+        response = requests.get(partPage, headers=headers)
+        if response.status_code != 200:
+            #print(f"Got an invalid status code from {webSiteUrl}{partUrl} ! status code: {response.status_code}")
+            print(f"Got an invalid status code from {partPage} ! status code: {response.status_code}") 
+            return
+
+        soup = BeautifulSoup(open("temp.html",'r'),"lxml")
+
+        # TODO: find a way to get datasheet url from that site
+        partName = None 
+        numOfPins = None
+        
+        partDetails = soup.find_all('small')
+        for partDetail in partDetails:
+            # Could get more info here; use print(partDetail.text) to see diffrent stuff to grab
+            if partDetail.text.strip() == "Number of Terminals:":
+                numOfPins = partDetail.parent.p.text.strip() # NOTE: str
+            
+            elif partDetail.text.strip() == "Source Content uid:":
+                partName = partDetail.parent.p.text.strip()
+        
+        return partName, None, None, partPage, numOfPins
+    
+    
+    print(f"Can't find part Details. website url: {webSiteUrl}")
+    return
 
 
 name, partDescription, bestDatasheetUrl, partPage, numOfPins = fetchComponentInfo(ICname, webSiteUrl)
 
-print(f"\n-------------\nBest part:\n \
+print(f"\n-------------\nBest part found:\n \
     name: {name}\n \
     Part description: {partDescription}\n \
     best datasheet: {bestDatasheetUrl}\n \
-    Octopart page: {partPage}\n \
+    part page: {partPage}\n \
     Number of pins: {numOfPins}")
