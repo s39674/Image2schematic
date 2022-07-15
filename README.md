@@ -1,4 +1,4 @@
-# Image2schematic - Fetching via HTTP branch
+# Image2schematic
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com) 
 
